@@ -1,0 +1,8 @@
+# Android build (see android/): dependencies and generated files
+android/node_modules/
+android/www/
+android/native/
+android/out/
+*.apk
+*.aab
+.DS_Store
