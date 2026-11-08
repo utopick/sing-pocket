@@ -737,7 +737,7 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
       }
       #lyGo {
         flex: none;
-        width: 74px;
+        width: 60px;
         min-height: 0;
         height: 44px;
         padding: 0 2px;
@@ -768,6 +768,171 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         to {
           box-shadow: 0 0 14px var(--hot);
         }
+      }
+      #sKar {
+        flex: none;
+        width: 56px;
+        min-height: 0;
+        height: 44px;
+        padding: 0 2px;
+        font-size: 12px;
+        font-weight: 800;
+        line-height: 1.1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+      #sKar i {
+        font-style: normal;
+        font-size: 7.5px;
+        letter-spacing: 0.5px;
+        color: var(--dim);
+      }
+      #sKar.on i {
+        color: var(--ink);
+      }
+      /* range finder */
+      .rgStep {
+        font-size: 14px;
+        line-height: 1.4;
+        margin: 4px 0 10px;
+      }
+      .rgStep small {
+        display: block;
+        color: var(--dim);
+        font-size: 12px;
+        margin-top: 4px;
+      }
+      .rgNote {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 10px;
+      }
+      .rgNote > b {
+        font: 800 44px var(--mono);
+        color: var(--acc);
+        line-height: 1;
+      }
+      .rgNote i {
+        display: block;
+        width: 70%;
+        height: 6px;
+        border-radius: 3px;
+        background: var(--panel2);
+        overflow: hidden;
+      }
+      .rgNote i b {
+        display: block;
+        height: 100%;
+        width: 0;
+        background: var(--acc);
+        transition: width 0.08s linear;
+      }
+      .rgRes {
+        font-size: 13px;
+        line-height: 1.5;
+        margin-bottom: 8px;
+      }
+      .rgRes:empty {
+        display: none;
+      }
+      .rgRes b {
+        color: var(--acc);
+      }
+      /* progress */
+      .pgTop {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 4px;
+        margin-bottom: 8px;
+      }
+      .pgTop div {
+        background: var(--panel2);
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 6px 4px;
+        text-align: center;
+      }
+      .pgTop b {
+        display: block;
+        font: 800 22px var(--mono);
+        color: var(--acc);
+        line-height: 1.1;
+      }
+      .pgTop i {
+        font-style: normal;
+        font: 700 8px var(--mono);
+        letter-spacing: 0.6px;
+        color: var(--dim);
+      }
+      .pgChart svg {
+        display: block;
+        width: 100%;
+        height: auto;
+      }
+      .pgChart .bar {
+        fill: var(--acc);
+        opacity: 0.55;
+      }
+      .pgChart .bar.today {
+        opacity: 1;
+      }
+      .pgChart .base {
+        stroke: var(--line);
+      }
+      .pgChart text {
+        font: 700 8px var(--mono);
+        fill: var(--dim);
+        text-anchor: middle;
+      }
+      .pgChart text.v {
+        fill: var(--text);
+      }
+      #pgWarm {
+        font-size: 12px;
+        color: var(--dim);
+        margin-top: 6px;
+      }
+      #pgWarm b {
+        color: var(--text);
+      }
+      .pgSong {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 5px 0;
+        border-bottom: 1px solid var(--line);
+        font-size: 12px;
+      }
+      .pgSong > div {
+        flex: 1;
+        min-width: 0;
+      }
+      .pgSong b {
+        display: block;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .pgSong small {
+        color: var(--dim);
+      }
+      .pgSong svg {
+        flex: none;
+        width: 64px;
+        height: 22px;
+      }
+      .pgSong polyline {
+        fill: none;
+        stroke: var(--acc);
+        stroke-width: 1.6;
+        stroke-linejoin: round;
+      }
+      .pgSong circle {
+        fill: var(--acc);
       }
       #hAt.on {
         background: var(--acc2);
@@ -1090,7 +1255,8 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
           <label class="knob"><i>TEMPO</i><b id="bpmTxt">90</b><input id="wBpm" type="range" min="50" max="160" step="2" value="90" /></label>
         </div>
         <div class="prow rib">
-          <button id="wPlay"></button><button id="wListen"></button><button id="wDir"></button><button id="wNotes"></button>
+          <button id="wPlay"></button><button id="wListen"></button><button id="wDir"></button><button id="wNotes"></button
+          ><button id="wRange"></button>
         </div>
       </section>
 
@@ -1104,6 +1270,7 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
             <button data-d="-1">−</button><span data-d="0"><i>KEY</i><b id="keyTxt">0</b></span><button data-d="1">+</button>
           </div>
           <button id="lyGo" title="Press the moment the first word is sung: the lyrics start there"><i>FIRST WORD</i>LYRICS</button>
+          <button id="sKar" title="Karaoke: take the voice out of the song"></button>
           <div class="step" id="tStep" title="Speed, key unchanged. Tap the middle to reset.">
             <button data-d="-1">−</button><span data-d="0"><i>SPEED</i><b id="tempoTxt">100%</b></span><button data-d="1">+</button>
           </div>
@@ -1170,6 +1337,19 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
             men singing a woman's song, and the other way round).
           </div>
         </div>
+        <div class="card fpanel" data-fp="prog" hidden>
+          <h3>Progress</h3>
+          <div class="pgTop" id="pgTop"></div>
+          <div class="pgChart" id="pgChart"></div>
+          <div id="pgWarm"></div>
+          <h3 style="margin-top: 12px">Songs</h3>
+          <div id="pgSongs"></div>
+          <div class="hint" style="margin-top: 8px">
+            Every warm-up, sing-along and recording counts, kept on this phone. Deleting a recording keeps its place in
+            the history.
+          </div>
+          <div class="row" style="margin-top: 6px"><button id="pgClear" style="flex: 1">CLEAR THE HISTORY</button></div>
+        </div>
         <div class="card fpanel" data-fp="theme" hidden>
           <h3>Theme</h3>
           <div id="themeBar">
@@ -1178,9 +1358,10 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
           </div>
         </div>
         <div class="prow" id="tTabs">
-          <button data-fpb="files"><i>OPEN · IMPORT</i>FILES</button>
+          <button data-fpb="files"><i>IMPORT</i>FILES</button>
           <button data-fpb="theme"><i>LOOK</i>THEME</button>
           <button data-fpb="opts"><i>SETTINGS</i>OPTIONS</button>
+          <button data-fpb="prog"><i>HISTORY</i>PROGRESS</button>
           <button id="helpBtn"><i>MANUAL</i>HELP</button>
         </div>
       </section>
@@ -1238,6 +1419,16 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
           <div class="hint" id="atTakeTxt"></div>
           <div class="row"><button id="atGo" class="on" style="flex: 1">MAKE A TUNED COPY</button></div>
         </div>
+      </div>
+    </div>
+    <!-- range finder: the lowest and the highest comfortable note, held; then the voice type that fits -->
+    <div id="rgSheet" class="sheetBg" hidden>
+      <div class="card" role="dialog" aria-modal="true">
+        <div class="row"><h3 style="flex: 1; margin: 0">Your range</h3><button id="rgClose">✕</button></div>
+        <div class="rgStep" id="rgStep"></div>
+        <div class="rgNote"><b id="rgNote">—</b><i><b id="rgBar"></b></i></div>
+        <div class="rgRes" id="rgRes"></div>
+        <div class="row" id="rgBtns"></div>
       </div>
     </div>
     <!-- vocal reference: what it is, pick a file, or go back to the song's own melody -->
@@ -1367,14 +1558,16 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         notes: true, // the piano plays the warm-up notes (else only the cue chord)
         song: null, // id of the open song
         at: { key: "-1", style: "nat", mon: 1 }, // autotune: key ("-1" every note, "0".."11" major, "m0".."m11" minor)
+        range: null, // [low, high] MIDI from the range finder
+        kar: false, // karaoke: the song's centre (the voice) taken out
       };
       try {
         Object.assign(S, JSON.parse(localStorage.getItem("sing.state") || "{}"));
       } catch {}
       function saveState() {
         try {
-          const { view, voice, ex, bpm, updown, listen, key, tempo, octFree, backing, notes, song, at } = S;
-          localStorage.setItem("sing.state", JSON.stringify({ view, voice, ex, bpm, updown, listen, key, tempo, octFree, backing, notes, song, at }));
+          const { view, voice, ex, bpm, updown, listen, key, tempo, octFree, backing, notes, song, at, range, kar } = S;
+          localStorage.setItem("sing.state", JSON.stringify({ view, voice, ex, bpm, updown, listen, key, tempo, octFree, backing, notes, song, at, range, kar }));
         } catch {}
       }
       let dbP;
@@ -1547,6 +1740,80 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         }
         return P.out;
       }
+      // Karaoke: most studio mixes put the lead voice in the centre (the same in both channels). L - R cancels the
+      // centre and keeps what is panned; the bass (also centred) and the cymbals' air are added back from L + R.
+      // Mono songs have nothing to cancel against.
+      function karIn(c) {
+        if (P.kin) return P.kin;
+        const o = songOut(c),
+          g = () => c.createGain(),
+          kin = g(),
+          dry = g(),
+          wet = g(),
+          sp = c.createChannelSplitter(2),
+          l = g(),
+          r = g(),
+          side = g(),
+          mid = g(),
+          lo1 = c.createBiquadFilter(),
+          lo2 = c.createBiquadFilter(),
+          hi = c.createBiquadFilter(),
+          air = g();
+        kin.channelCount = 2;
+        kin.channelCountMode = "explicit";
+        kin.channelInterpretation = "speakers";
+        kin.connect(dry).connect(o);
+        kin.connect(sp);
+        sp.connect(l, 0);
+        sp.connect(r, 1);
+        r.gain.value = -1;
+        l.connect(side);
+        r.connect(side);
+        side.gain.value = 0.8;
+        side.connect(wet);
+        sp.connect(mid, 0);
+        sp.connect(mid, 1);
+        mid.gain.value = 0.5;
+        lo1.type = lo2.type = "lowpass";
+        lo1.frequency.value = lo2.frequency.value = 170;
+        mid.connect(lo1).connect(lo2).connect(wet);
+        hi.type = "highpass";
+        hi.frequency.value = 7500;
+        air.gain.value = 0.5;
+        mid.connect(hi).connect(air).connect(wet);
+        wet.connect(o);
+        Object.assign(P, { kin, kdry: dry, kwet: wet });
+        karSet(true);
+        return kin;
+      }
+      function karSet(now) {
+        if (!P.kin) return;
+        const t = ctx.currentTime,
+          on = !!S.kar;
+        P.kdry.gain.setTargetAtTime(on ? 0 : 1, t, now ? 0.001 : 0.04);
+        P.kwet.gain.setTargetAtTime(on ? 1 : 0, t, now ? 0.001 : 0.04);
+      }
+      // how much of the song is not in the centre (0 for a mono song)
+      function songWidth(buf) {
+        if (!buf || buf.numberOfChannels < 2) return 0;
+        const L = buf.getChannelData(0),
+          R = buf.getChannelData(1),
+          step = Math.max(1, Math.floor(L.length / 200000));
+        let sd = 0,
+          sm = 0;
+        for (let i = 0; i < L.length; i += step) {
+          const d = L[i] - R[i],
+            m = L[i] + R[i];
+          sd += d * d;
+          sm += m * m;
+        }
+        return sm ? sd / sm : 0;
+      }
+      function karFace() {
+        const b = $("#sKar");
+        b.innerHTML = `<i>KARAOKE</i>${S.kar ? "ON" : "OFF"}`;
+        b.classList.toggle("on", !!S.kar);
+      }
       // a warm-up started while recording joins the recording's backing
       function recBacking(node) {
         if (REC.on && REC.bgIn && node) {
@@ -1637,7 +1904,93 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         take.name ||= (take.kind === "song" ? "Take" : take.kind === "warm" ? "Warm-up" : "Session") + " " + new Date().toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
         await dbPut("takes", take);
         renderList();
+        if (take.kind === "session") logAdd("free", dur, null, "");
+        if (take.kind === "song") logAdd("song", dur, take.score, take.songName);
         return take;
+      }
+      // ---- the practice history ("sing.log"): one line per warm-up, sing-along and recording
+      // { d: date, k: "warm" | "play" | "song" | "free", s: seconds, sc: share in tune (or null), n: song or exercise }
+      let LOG = [];
+      try {
+        LOG = JSON.parse(localStorage.getItem("sing.log") || "[]");
+      } catch {}
+      function logAdd(k, sec, sc, n) {
+        if (!(sec >= 5)) return;
+        LOG.push({ d: Date.now(), k, s: Math.round(sec), sc: sc == null || sc !== sc ? null : Math.round(sc * 1000) / 1000, n: n || "" });
+        if (LOG.length > 4000) LOG.splice(0, LOG.length - 4000);
+        try {
+          localStorage.setItem("sing.log", JSON.stringify(LOG));
+        } catch {}
+        if (fpOpen === "prog") renderProg();
+      }
+      const dayKey = (t) => {
+        const d = new Date(t);
+        return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+      };
+      function renderProg() {
+        const DAY = 86400000,
+          now = Date.now(),
+          today = new Date(new Date().toDateString()).getTime(),
+          days = new Set(LOG.map((e) => dayKey(e.d)));
+        // streak: days in a row with some practice, up to today (or yesterday, if today has none yet)
+        let streak = 0,
+          t = days.has(dayKey(today)) ? today : today - DAY;
+        while (days.has(dayKey(t))) streak++, (t -= DAY);
+        const week = LOG.filter((e) => e.d >= today - 6 * DAY).reduce((a, e) => a + e.s, 0),
+          warms = (from, to) => LOG.filter((e) => e.k === "warm" && e.sc != null && e.d >= from && e.d < to),
+          avg = (xs) => (xs.length ? xs.reduce((a, e) => a + e.sc, 0) / xs.length : null),
+          w1 = avg(warms(today - 6 * DAY, now + DAY)),
+          w0 = avg(warms(today - 13 * DAY, today - 6 * DAY)),
+          pc = (x) => (x == null ? "—" : Math.round(x * 100) + "%");
+        $("#pgTop").innerHTML =
+          `<div><b>${streak}</b><i>DAY${streak === 1 ? "" : "S"} IN A ROW</i></div>` +
+          `<div><b>${Math.round(week / 60)}</b><i>MIN · 7 DAYS</i></div>` +
+          `<div><b>${pc(w1)}</b><i>WARM-UPS IN TUNE</i></div>`;
+        // the last 14 days, minutes a day
+        const mins = [...Array(14)].map((_, i) => {
+            const k = dayKey(today - (13 - i) * DAY);
+            return LOG.filter((e) => dayKey(e.d) === k).reduce((a, e) => a + e.s, 0) / 60;
+          }),
+          top = Math.max(10, ...mins),
+          W = 280,
+          H = 86,
+          bw = W / 14;
+        $("#pgChart").innerHTML =
+          `<svg viewBox="0 0 ${W} ${H + 14}">` +
+          mins
+            .map((m, i) => {
+              const h = m > 0 ? Math.max(2, (m / top) * (H - 14)) : 0,
+                x = i * bw + 3,
+                wd = new Date(today - (13 - i) * DAY).toLocaleDateString(undefined, { weekday: "narrow" });
+              return (
+                (h ? `<rect class="bar${i === 13 ? " today" : ""}" x="${x}" y="${H - h}" width="${bw - 6}" height="${h}" rx="2"/>` : "") +
+                (m >= 0.5 ? `<text class="v" x="${x + (bw - 6) / 2}" y="${H - h - 3}">${Math.round(m)}</text>` : "") +
+                `<text x="${x + (bw - 6) / 2}" y="${H + 11}">${wd}</text>`
+              );
+            })
+            .join("") +
+          `<line class="base" x1="0" x2="${W}" y1="${H + 0.5}" y2="${H + 0.5}"/></svg>`;
+        $("#pgWarm").innerHTML = LOG.length
+          ? `Minutes a day, the last two weeks. Warm-ups in tune: <b>${pc(w1)}</b> these 7 days, <b>${pc(w0)}</b> the 7 before.`
+          : "Nothing yet: a warm-up, a sing-along or a recording starts the history.";
+        // songs: takes and their scores, oldest to newest
+        const by = new Map();
+        LOG.filter((e) => e.k === "song" && e.n).forEach((e) => (by.has(e.n) ? by.get(e.n) : by.set(e.n, []).get(e.n)).push(e));
+        $("#pgSongs").innerHTML =
+          [...by]
+            .sort((a, b) => b[1][b[1].length - 1].d - a[1][a[1].length - 1].d)
+            .map(([n, es]) => {
+              const sc = es.filter((e) => e.sc != null).map((e) => e.sc),
+                last = sc.slice(-12),
+                pts = last.map((v, i) => `${last.length > 1 ? (i / (last.length - 1)) * 60 + 2 : 32},${20 - v * 18}`),
+                best = sc.length ? Math.max(...sc) : null;
+              return (
+                `<div class="pgSong"><div><b>${esc(n)}</b><small>${es.length} take${es.length === 1 ? "" : "s"} · best ${pc(best)} · last ${pc(sc.length ? sc[sc.length - 1] : null)}</small></div>` +
+                (pts.length ? `<svg viewBox="0 0 64 22"><polyline points="${pts.join(" ")}"/><circle cx="${pts[pts.length - 1].split(",")[0]}" cy="${pts[pts.length - 1].split(",")[1]}" r="2.2"/></svg>` : "") +
+                `</div>`
+              );
+            })
+            .join("") || '<div class="hint">Record a take over a song (● in the Song view) to follow its score here.</div>';
       }
       function recFace() {
         $("#rec").classList.toggle("on", REC.on);
@@ -1800,6 +2153,14 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         mezzo: ["Mezzo", 57, 81],
         soprano: ["Soprano", 60, 84],
       };
+      const VOICE_TYPES = Object.keys(VOICES);
+      // the range finder adds "Yours" to the list
+      function rangeVoice() {
+        if (S.range) VOICES.mine = ["Yours", S.range[0], S.range[1]];
+        else delete VOICES.mine;
+        if (!VOICES[S.voice]) S.voice = "baritone";
+      }
+      rangeVoice();
       // n: intervals above the key's root; d: beats per note; glide: slide between the points; stac: short notes
       const EXS = [
         { id: "trill", name: "Lip trill", hint: "brrr · glide 1-5-1", n: [0, 7, 0], d: [2, 2], glide: true },
@@ -1897,7 +2258,9 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         if (REC.on && REC.kind === "warm") recStop();
         if (!REC.on && S.view !== "song") micStop();
         warmFace();
-        const done = W.reps.filter((r) => r.n > 8);
+        const done = W.reps.filter((r) => r.n > 8),
+          ex = EXS.find((e) => e.id === S.ex);
+        logAdd("warm", Math.min(ctx.currentTime - W.t0, W.end), done.length ? done.reduce((a, r) => a + r.ok / r.n, 0) / done.length : null, ex && ex.name);
         if (done.length) toast(`Warm-up: ${Math.round((done.reduce((a, r) => a + r.ok / r.n, 0) / done.length) * 100)}% in tune over ${done.length} keys`, 2600);
       }
       function warmFrame() {
@@ -2398,7 +2761,7 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
           src.loopStart = SONG.A * s;
           src.loopEnd = SONG.B * s;
         }
-        src.connect(songOut(c));
+        src.connect(karIn(c));
         src.start(0, from * s);
         src.onended = () => {
           if (P.src === src) songStop();
@@ -2411,6 +2774,8 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         if (!P.on) return;
         SONG.pos = songPos();
         P.on = false;
+        // playing along (not a recorded take: that one is logged with its score)
+        if (!(REC.on && REC.kind === "song")) logAdd("play", ctx.currentTime - P.t0, null, SONG.rec && SONG.rec.name);
         try {
           P.src.onended = null;
           P.src.stop();
@@ -3339,6 +3704,7 @@ registerProcessor("autotune", AutoTune);
       let fpOpen = null;
       function filePanel(k) {
         fpOpen = fpOpen === k ? null : k;
+        if (fpOpen === "prog") renderProg();
         $$("#takes .fpanel").forEach((p) => (p.hidden = p.dataset.fp !== fpOpen));
         $$("#tTabs [data-fpb]").forEach((b) => b.classList.toggle("on", b.dataset.fpb === fpOpen));
       }
@@ -3424,6 +3790,7 @@ registerProcessor("autotune", AutoTune);
         loop: IC('<path d="M17 2l3 3-3 3"/><path d="M4 11V9a4 4 0 0 1 4-4h12M7 22l-3-3 3-3"/><path d="M20 13v2a4 4 0 0 1-4 4H4"/>'),
         lyr: IC('<path d="M4 6h16M4 10h16M4 14h10M4 18h7"/>'),
         guide: IC('<circle cx="12" cy="8" r="4"/><path d="M5 21a7 7 0 0 1 14 0"/>'),
+        range: IC('<path d="M12 3v18M8 7l4-4 4 4M8 17l4 4 4-4"/><path d="M4 12h3M17 12h3"/>'),
       };
       function rib(id, icon, cap, on) {
         const b = $("#" + id);
@@ -3435,6 +3802,8 @@ registerProcessor("autotune", AutoTune);
         rib("wListen", "mic", S.listen ? "LISTEN" : "NO MIC", S.listen);
         rib("wDir", S.updown ? "updown" : "up", S.updown ? "UP + DOWN" : "UP ONLY", false);
         rib("wNotes", "piano", S.notes === false ? "CUE ONLY" : "PIANO", S.notes !== false);
+        rib("wRange", "range", "RANGE", S.voice === "mine");
+        karFace();
         rib("sOpen", "open", "OPEN");
         rib("sA", "a", SONG.buf && SONG.A > 0 ? mmss(SONG.A) : "SET A");
         rib("sB", "b", SONG.buf && SONG.B < SONG.buf.duration - 0.05 ? mmss(SONG.B) : "SET B");
@@ -3443,6 +3812,129 @@ registerProcessor("autotune", AutoTune);
         rib("sGuide", "guide", "VOCAL REF", SONG.rec && SONG.rec.guide);
       }
       $("#wPlay").onclick = () => (W.on ? warmStop() : warmStart());
+      // ---- karaoke
+      $("#sKar").onclick = () => {
+        if (!S.kar && SONG.buf && songWidth(SONG.buf) < 0.004)
+          return toast(SONG.buf.numberOfChannels < 2 ? "This song is mono: there is no way to take its voice out" : "This song is almost mono: the voice cannot be taken out", 2800);
+        S.kar = !S.kar;
+        karSet();
+        karFace();
+        saveState();
+        if (S.kar) toast("Karaoke: the voice in the centre of the mix is taken out (works on most studio songs)", 2600);
+      };
+      // ---- range finder: hold the lowest comfortable note, then the highest
+      const RG = { step: 0, lo: 0, hi: 0, iv: 0, run: [], anchor: NaN };
+      async function rangeOpen() {
+        warmStop();
+        songStop();
+        RG.step = 0;
+        RG.run = [];
+        rangeFace();
+        $("#rgSheet").hidden = false;
+        if (!(await micStart())) return rangeClose();
+        clearInterval(RG.iv);
+        RG.iv = setInterval(rangeTick, 50);
+      }
+      function rangeClose() {
+        clearInterval(RG.iv);
+        $("#rgSheet").hidden = true;
+        if (!W.on && !P.on) micStop();
+      }
+      const HOLD = 30; // frames of 50 ms: hold a note 1.5 s
+      function rangeTick() {
+        if (RG.step > 1) return;
+        const { m } = voiceNow();
+        if (m !== m) {
+          RG.run = [];
+          $("#rgNote").textContent = "—";
+          $("#rgBar").style.width = "0";
+          return;
+        }
+        $("#rgNote").textContent = noteName(m);
+        if (!RG.run.length || Math.abs(m - RG.anchor) > 0.8) (RG.run = []), (RG.anchor = m);
+        RG.run.push(m);
+        $("#rgBar").style.width = Math.min(100, (RG.run.length / HOLD) * 100) + "%";
+        if (RG.run.length < HOLD) return;
+        const xs = RG.run.slice().sort((a, b) => a - b),
+          note = Math.round(xs[xs.length >> 1]);
+        RG.run = [];
+        if (RG.step === 0) {
+          RG.lo = note;
+          RG.step = 1;
+        } else if (note < RG.lo + 7) {
+          toast(`${noteName(note)} is not much higher than ${noteName(RG.lo)}: go higher (no strain)`, 2400);
+          return;
+        } else {
+          RG.hi = note;
+          RG.step = 2;
+          clearInterval(RG.iv);
+          if (!W.on && !P.on) micStop();
+        }
+        rangeFace();
+      }
+      // the built-in voice type nearest to the range found
+      function rangeType(lo, hi) {
+        return VOICE_TYPES.map((k) => [k, Math.abs(VOICES[k][1] - lo) + Math.abs(VOICES[k][2] - hi)]).sort((a, b) => a[1] - b[1])[0][0];
+      }
+      function rangeFace() {
+        const st = $("#rgStep");
+        $("#rgRes").innerHTML = "";
+        $("#rgBar").style.width = "0";
+        if (RG.step < 2) {
+          $("#rgNote").textContent = "—";
+          st.innerHTML =
+            RG.step === 0
+              ? `<b>1 · Your lowest note.</b> Sing an easy “ah” on the lowest note you can sing comfortably, and hold it until the bar fills.<small>Comfortable: not a growl, not a whisper.</small>`
+              : `<b>2 · Your highest note.</b> Low note: <b>${noteName(RG.lo)}</b>. Now slide up to the highest note you can sing comfortably and hold it.<small>No straining and no squeak: the top note you could sing in a song.</small>`;
+          $("#rgBtns").innerHTML = RG.step === 1 ? '<button data-rg="again" style="flex:1">START AGAIN</button>' : "";
+          return;
+        }
+        const lo = RG.lo,
+          hi = RG.hi,
+          span = hi - lo,
+          k = rangeType(lo, hi),
+          [vn, vlo, vhi] = VOICES[k];
+        st.innerHTML = "<b>Done.</b>";
+        $("#rgNote").textContent = noteName(lo) + "–" + noteName(hi);
+        $("#rgRes").innerHTML =
+          `Your comfortable range is <b>${Math.floor(span / 12)} octave${Math.floor(span / 12) === 1 ? "" : "s"}${span % 12 ? " and " + (span % 12) + " semitone" + (span % 12 === 1 ? "" : "s") : ""}</b>. ` +
+          `The nearest voice type is <b>${vn}</b> (${noteName(vlo)}–${noteName(vhi)}).<br>` +
+          `<span class="hint">USE MY RANGE fits the warm-ups to exactly your notes. Ranges grow with practice: measure it again in a few weeks.</span>`;
+        $("#rgBtns").innerHTML = `<button data-rg="mine" class="on" style="flex:2">USE MY RANGE</button><button data-rg="type" data-k="${k}" style="flex:2">USE ${vn.toUpperCase()}</button><button data-rg="again" style="flex:1">AGAIN</button>`;
+      }
+      $("#rgBtns").onclick = (e) => {
+        const b = e.target.closest("[data-rg]");
+        if (!b) return;
+        if (b.dataset.rg === "again") return rangeOpen();
+        if (b.dataset.rg === "mine") {
+          S.range = [RG.lo, RG.hi];
+          S.voice = "mine";
+        } else S.voice = b.dataset.k;
+        rangeVoice();
+        saveState();
+        renderWarm();
+        ribFace();
+        rangeClose();
+        toast("Voice: " + VOICES[S.voice][0] + " " + noteName(VOICES[S.voice][1]) + "–" + noteName(VOICES[S.voice][2]));
+      };
+      $("#wRange").onclick = rangeOpen;
+      $("#rgClose").onclick = rangeClose;
+      $("#rgSheet").onclick = (e) => e.target.id === "rgSheet" && rangeClose();
+      $("#pgClear").onclick = (e) => {
+        const b = e.currentTarget;
+        if (!b.classList.contains("arm")) {
+          b.classList.add("arm", "rec", "on");
+          b.textContent = "CLEAR ALL THE HISTORY?";
+          return setTimeout(() => (b.classList.remove("arm", "rec", "on"), (b.textContent = "CLEAR THE HISTORY")), 2500);
+        }
+        LOG = [];
+        try {
+          localStorage.removeItem("sing.log");
+        } catch {}
+        b.classList.remove("arm", "rec", "on");
+        b.textContent = "CLEAR THE HISTORY";
+        renderProg();
+      };
       $("#wListen").onclick = () => {
         S.listen = !S.listen;
         if (W.on) S.listen ? micStart() : micStop();
@@ -3930,6 +4422,8 @@ registerProcessor("autotune", AutoTune);
               "- **5-note scale**, **Arpeggio**, **9-note scale**: agility and range, on any vowel.",
               "- **Octave jump** and **Staccato**: accuracy and breath support.",
               "If an exercise does not fit (the chips say so), choose a lower voice type. The voice ranges are comfortable ones, not limits: never push into pain or strain.",
+              "## Your range",
+              "**RANGE** measures your own voice: sing and hold your **lowest** comfortable note until the bar fills, then your **highest**. It tells you how wide your range is and the nearest voice type. **USE MY RANGE** adds **Yours** to the voice list and fits every exercise to exactly your notes; or pick the suggested type. Measure it again now and then: practice widens it.",
             ],
             es: [
               "Elige tu **tipo de voz** arriba y toca un **pad de ejercicio**: empieza al momento. Cada ejercicio comienza cerca de lo más grave de tu registro y sube de semitono en semitono (y vuelve a bajar con **UP + DOWN**).",
@@ -3943,6 +4437,8 @@ registerProcessor("autotune", AutoTune);
               "- **Escala de 5 notas**, **Arpegio**, **Escala de 9 notas**: agilidad y registro, con cualquier vocal.",
               "- **Salto de octava** y **Staccato**: precisión y apoyo de la respiración.",
               "Si un ejercicio no cabe (las fichas lo avisan), elige un tipo de voz más grave. Los registros son cómodos, no límites: nunca fuerces hasta sentir dolor o tensión.",
+              "## Tu registro",
+              "**RANGE** mide tu propia voz: canta y mantén tu nota **más grave** cómoda hasta que se llene la barra, y luego la **más aguda**. Te dice lo amplio que es tu registro y el tipo de voz más cercano. **USE MY RANGE** añade **Yours** a la lista de voces y ajusta cada ejercicio exactamente a tus notas; o elige el tipo sugerido. Vuelve a medirlo de vez en cuando: la práctica lo amplía.",
             ],
           },
         },
@@ -3955,6 +4451,7 @@ registerProcessor("autotune", AutoTune);
               "- **KEY − +** transposes the song by semitones (−12 to +12) without changing its speed; **SPEED − +** slows it down or speeds it up without changing its key. Tap the value in the middle to go back to the original. The first play after a change takes a moment while the song is prepared.",
               "- **Moving around**: tap or drag **the overview** at the bottom (the whole song) to go anywhere; drag **the lane** sideways to rewind or fast-forward a little (drag right = back). The song pauses while your finger is down and plays on when you lift it.",
               "- **SET A** and **SET B** mark the start and end of a part at the playing position; **LOOP** repeats it.",
+              "- **KARAOKE** takes the voice out of the song, to sing over it yourself. It cancels what sits in the centre of a stereo mix (almost always the lead voice) and keeps the bass; reverb and backing vocals panned to the sides stay, faintly. It does nothing on mono songs. The pitch test still uses the original melody.",
               "## Lyrics",
               "**LYRICS** (or a tap on the lyrics box) searches **lrclib.net**, a free lyrics library. It ignores extras like *(Karaoke Version)* or *feat.*, so *My Way (Karaoke Version)* finds *My Way*. Lyrics with times follow the song line by line. You can also paste them or open an *.lrc* file.",
               "- **Syncing the lyrics** (karaoke and live versions often have a different intro): press **FIRST WORD · LYRICS** (between KEY and SPEED) the moment the first word is sung. If the song is stopped, the first press plays it from the start and the button turns red, waiting for the second. Fine-tune with the small **−** and **+** beside the lyrics (0.1 s earlier or later). **AUTO** in the lyrics sheet guesses where the voice starts. The timing is saved with the song.",
@@ -3973,6 +4470,7 @@ registerProcessor("autotune", AutoTune);
               "- **KEY − +** transporta la canción en semitonos (−12 a +12) sin cambiar su velocidad; **SPEED − +** la ralentiza o acelera sin cambiar su tono. Toca el valor del centro para volver al original. La primera reproducción tras un cambio tarda un momento mientras se prepara la canción.",
               "- **Moverse**: toca o arrastra **la vista general** de abajo (la canción entera) para ir a cualquier punto; arrastra **el carril** de lado para retroceder o avanzar un poco (arrastrar a la derecha = atrás). La canción se pausa mientras tienes el dedo puesto y sigue al levantarlo.",
               "- **SET A** y **SET B** marcan el inicio y el final de una parte en la posición que suena; **LOOP** la repite.",
+              "- **KARAOKE** quita la voz de la canción, para cantar tú encima. Cancela lo que está en el centro de una mezcla estéreo (casi siempre la voz principal) y conserva el bajo; la reverb y los coros abiertos a los lados quedan, débiles. No hace nada en canciones mono. La prueba de afinación sigue usando la melodía original.",
               "## Letras",
               "**LYRICS** (o tocar el recuadro de la letra) busca en **lrclib.net**, una biblioteca de letras gratuita. Ignora añadidos como *(Karaoke Version)* o *feat.*, así que *My Way (Karaoke Version)* encuentra *My Way*. Las letras con tiempos siguen la canción línea a línea. También puedes pegarlas o abrir un archivo *.lrc*.",
               "- **Sincronizar la letra** (las versiones karaoke y en directo suelen tener otra intro): pulsa **FIRST WORD · LYRICS** (entre KEY y SPEED) justo cuando se canta la primera palabra. Si la canción está parada, la primera pulsación la reproduce desde el principio y el botón se pone rojo, esperando la segunda. Ajusta con los pequeños **−** y **+** junto a la letra (0,1 s antes o después). **AUTO** en la hoja de letras adivina dónde empieza la voz. El ajuste se guarda con la canción.",
@@ -4024,6 +4522,7 @@ registerProcessor("autotune", AutoTune);
               "## The bottom bar",
               "- **FILES**: open a song, **import** a recording (any audio file), and how much space the app uses.",
               "- **OPTIONS**: **note names** in letters (**A B C**) or solfège (**Do Re Mi**), shared with TRACK.Pocket and TUNE.Pocket; **BACKING IN RECORDINGS** (on: warm-ups and song takes record the piano or the song with your voice, like a performance; off: only your voice); **OCTAVE-FREE** for the pitch test.",
+              "- **PROGRESS**: your practice over time. **Days in a row** with some singing, **minutes** in the last 7 days, and how in tune your **warm-ups** were (against the week before); a chart of the minutes of the last 14 days; and every **song** you recorded takes of, with its best and last score and how it moves. Deleting a recording keeps it in the history; **CLEAR THE HISTORY** starts it over.",
               "- **THEME**: the six looks shared with TRACK.Pocket. On wide screens the backdrop is animated and moves with the song, the piano or your voice.",
               "- **HELP**: this manual.",
               "Recordings are compressed (Opus or AAC, about 0.7 MB a minute) and stored on this device only, inside the app. Uninstalling the app deletes them: SAVE the ones you want to keep.",
@@ -4036,6 +4535,7 @@ registerProcessor("autotune", AutoTune);
               "## La barra inferior",
               "- **FILES**: abrir una canción, **importar** una grabación (cualquier archivo de audio), y cuánto espacio usa la app.",
               "- **OPTIONS**: **nombres de las notas** en letras (**A B C**) o solfeo (**Do Re Mi**), compartido con TRACK.Pocket y TUNE.Pocket; **BACKING IN RECORDINGS** (activado: los calentamientos y tomas de canción graban el piano o la canción junto a tu voz, como una actuación; desactivado: solo tu voz); **OCTAVE-FREE** para la prueba de afinación.",
+              "- **PROGRESS**: tu práctica a lo largo del tiempo. **Días seguidos** cantando, **minutos** de los últimos 7 días y lo afinados que fueron tus **calentamientos** (frente a la semana anterior); un gráfico con los minutos de los últimos 14 días; y cada **canción** de la que grabaste tomas, con su mejor y última nota y cómo evoluciona. Borrar una grabación la mantiene en el historial; **CLEAR THE HISTORY** lo empieza de cero.",
               "- **THEME**: los seis aspectos que comparte con TRACK.Pocket. En pantallas anchas el fondo está animado y se mueve con la canción, el piano o tu voz.",
               "- **HELP**: este manual.",
               "Las grabaciones se comprimen (Opus o AAC, unos 0,7 MB por minuto) y se guardan solo en este dispositivo, dentro de la app. Desinstalar la app las borra: guarda con SAVE las que quieras conservar.",
