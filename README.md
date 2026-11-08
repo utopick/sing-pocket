@@ -32,6 +32,12 @@ the song with **GUIDE**, and that file becomes the melody you sing against.
 The app does not download from YouTube. Downloading is against YouTube's terms of service, and its embedded player
 doesn't let other apps change the pitch. Use songs you have as files.
 
+## AI use
+
+I built this app starting from my own older code, with the help of an AI coding assistant (Claude, by Anthropic), which wrote and reworked much of the code following my directions and ideas.
+
+The app itself uses no AI: everything runs on your device, and nothing you play, sing or record is sent to any AI service. The only network request it makes is the optional lyrics search on lrclib.net.
+
 ## Privacy and storage
 
 Everything stays on the device: songs and takes in IndexedDB, settings in localStorage. The app makes one kind of
