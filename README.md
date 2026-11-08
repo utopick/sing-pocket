@@ -8,6 +8,8 @@ SING.Pocket is a pocket vocal coach: warm-ups that follow your voice, song pract
 
 It should run fully offline (only the lyrics search needs a connection), although opening the HTML file directly can cause microphone permission issues, so use the hosted GitHub page instead or self-host the HTML.
 
+**Open it:** [utopick.github.io/sing-pocket](https://utopick.github.io/sing-pocket/) · **Download:** the Android APK and the HTML file from [Releases](https://github.com/utopick/sing-pocket/releases/latest).
+
 I've been adding features and tweaking a lot, so they come out not fully tested, and there could be bugs. Leave me an issue and I'll fix it.
 
 There is a help wiki inside (también en español), with small interactive demos you can drag around: a warm-up lane, the range finder, autotune and a pocket-size plane flight.
