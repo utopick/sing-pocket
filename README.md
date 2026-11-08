@@ -2,7 +2,7 @@
 
 # SING.Pocket
 
-<!-- your intro here -->
+Sing is the result of me not doing my vocal exercises daily enough. Singing has brought me a lot of happiness, and I kinda wanted something to have an excuse to practice more technique and less carpool karaoke. This is an amateurs idea of a vocal coach app, so bear with me. It kinda does what I need right now, and I hope you find it useful.
 
 SING.Pocket is a pocket vocal coach: warm-ups that follow your voice, song practice with key and speed change, A-B loops, lyrics, a pitch test that shows where you sang in tune and where you didn't, recorded takes, a range finder, autotune, a sampler for your voice and a singing game. It is the sister app of [TRACK.Pocket](https://github.com/utopick/track-pocket) and [TUNE.Pocket](https://github.com/utopick/tune-pocket), and runs from one self-contained HTML file, with no install and no dependencies.
 
@@ -10,7 +10,7 @@ It should run fully offline (only the lyrics search needs a connection), althoug
 
 I've been adding features and tweaking a lot, so they come out not fully tested, and there could be bugs. Leave me an issue and I'll fix it.
 
-There is a help wiki inside (también en español).
+There is a help wiki inside (también en español), with small interactive demos you can drag around: a warm-up lane, the range finder, autotune and a pocket-size plane flight.
 
 ![SING.Pocket on five screens, each in a different theme](.github/readme/hero.png)
 
@@ -59,12 +59,12 @@ Open `index.html` in a modern web browser. The microphone needs `https://` or `l
   - **Pitch test:** **●** records you singing along and scores each lyric line. Tap a weak line to loop it.
 - **Range:** hold your lowest and highest comfortable notes. A chart puts your range beside the six voice types and your earlier measures, and **USE MINE** fits the warm-ups and the game to it.
 - **Autotune:** live through headphones (natural or hard, every note or a key), with a trace of your voice and of what you hear, and tuned copies of any recording.
-- **Vox:** a sampler for your voice, with 16 pads. Record a verse after a count-in, overdub harmonies on it, crop it, reverse it, change its pitch, and bake in effects (reverb, echo, double, chorus, third and fifth harmonies, octaves, autotune, radio, lo-fi…). Samples stay on the phone, and **SAVE** sends one to Files.
+- **Sampler:** for your voice, with 16 pads. Record a verse after a count-in, overdub harmonies on it, crop it, reverse it, change its pitch, and bake in effects (reverb, echo, double, chorus, third and fifth harmonies, octaves, autotune, radio, lo-fi…). Samples stay on the phone, and **SAVE** sends one to Files.
 - **Plane:** a paper plane flies through hoops, and your voice steers it. The hoops follow a warm-up exercise in your range, on three levels (Easy forgives the octave and helps you aim). It's a warm-up in disguise.
 - **History:** days in a row, minutes a day, your warm-up and song scores over time, your flights and your range measures.
 - **Files** (last button): your songs and recordings. Play a take, open it in Autotune, export it (compressed, Opus or AAC), or delete it. **●** here records a free session.
 
-![The views: warm-up, song, range, vox, the plane game and autotune](.github/readme/views.png)
+![The views: warm-up, song, range, sampler, the plane game and autotune](.github/readme/views.png)
 
 ### Themes
 
@@ -82,7 +82,7 @@ The app does not download from YouTube. Downloading is against YouTube's terms o
 
 ### Your songs and takes
 
-Songs, takes and Vox samples are stored in your browser (IndexedDB), settings in `localStorage`; they are not uploaded anywhere. Clearing browser storage removes them, so export the takes you want to keep.
+Songs, takes and Sampler pads are stored in your browser (IndexedDB), settings in `localStorage`; they are not uploaded anywhere. Clearing browser storage removes them, so export the takes you want to keep.
 
 ## Android app (APK)
 
