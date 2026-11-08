@@ -6,7 +6,9 @@ Sing is the result of me not doing my vocal exercises daily enough. Singing has 
 
 SING.Pocket is a pocket vocal coach: warm-ups that follow your voice, song practice with key and speed change, A-B loops, lyrics, a pitch test that shows where you sang in tune and where you didn't, recorded takes, a range finder, autotune, a sampler for your voice and a singing game. It is the sister app of [TRACK.Pocket](https://github.com/utopick/track-pocket) and [TUNE.Pocket](https://github.com/utopick/tune-pocket), and runs from one self-contained HTML file, with no install and no dependencies.
 
-It should run fully offline (only the lyrics search needs a connection), although opening the HTML file directly can cause microphone permission issues, so use the hosted GitHub page instead or self-host the HTML.
+It should run fully offline, although opening the HTML file directly can cause microphone permission issues, so use the hosted GitHub page instead or self-host the HTML.
+
+The one exception is the **lyrics search**: you don't need a connection to use the app, but searching for lyrics (FIND) won't work offline. Without a connection you can still paste lyrics or open an `.lrc` file.
 
 **Open it:** [utopick.github.io/sing-pocket](https://utopick.github.io/sing-pocket/) · **Download:** the Android APK and the HTML file from [Releases](https://github.com/utopick/sing-pocket/releases/latest).
 
@@ -59,7 +61,7 @@ Open `index.html` in a modern web browser. The microphone needs `https://` or `l
   - **SPEED:** 50–120% without changing the pitch. Both use a WSOLA time stretch done in the app.
   - **KARAOKE:** turns the centre of the mix (usually the voice) down.
   - **Loops:** tap the overview to jump, drag it (or use SET A / SET B) to loop a part.
-  - **LYRICS:** search lrclib.net, paste them, or open an `.lrc` file.
+  - **LYRICS:** search lrclib.net (this needs a connection), paste them, or open an `.lrc` file.
   - **Pitch test:** **●** records you singing along and scores each lyric line. Tap a weak line to loop it.
 - **Range:** hold your lowest and highest comfortable notes. A chart puts your range beside the six voice types and your earlier measures, and **USE MINE** fits the warm-ups and the game to it.
 - **Autotune:** live through headphones (natural or hard, every note or a key), with a trace of your voice and of what you hear, and tuned copies of any recording.
