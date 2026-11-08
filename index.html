@@ -13,9 +13,9 @@
 
   Storage
     localStorage  sing.theme, sing.lang, sing.welcome, sing.state { view, voice, ex, bpm, updown, listen, key,
-                  tempo, octFree, song }
-    IndexedDB     "sing-pocket": songs { id, name, artist, title, blob, lyrics, ref, refHop, guide }
-                                 takes { id, kind, name, date, rate, pcm (Int16), dur, song, key, tempo, pitch, score, segs }
+                  tempo, octFree, backing, notes, song }
+    IndexedDB     "sing-pocket": songs { id, name, artist, title, blob, lyrics, lyrOff, ref, refHop, guide }
+                                 takes { id, kind, name, date, blob, mime, dur, song, key, tempo, pitch, score, segs }
 -->
 <html lang="en">
   <head>
@@ -394,12 +394,85 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         flex: none;
         width: 34px;
       }
-      .bpm input::-webkit-inner-spin-button {
-        -webkit-appearance: none;
-        margin: 0;
+      #songDd {
+        flex: 1;
+        min-width: 0;
+        text-align: center;
       }
-      .bpm input {
-        appearance: textfield;
+      #songDd span {
+        display: block;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      /* KEY and SPEED: − value + */
+      .step {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        align-items: stretch;
+        height: 44px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: var(--panel2);
+        overflow: hidden;
+      }
+      .step button {
+        flex: none;
+        width: 46px;
+        min-height: 0;
+        border: 0;
+        border-radius: 0;
+        padding: 0;
+        font: 800 22px var(--mono);
+        background: none;
+        color: var(--acc);
+      }
+      .step button:active {
+        background: var(--acc);
+        color: var(--ink);
+      }
+      .step span {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        border-inline: 1px solid var(--line);
+        cursor: pointer;
+      }
+      .step i {
+        font-style: normal;
+        font-size: 8px;
+        letter-spacing: 1px;
+        font-weight: 700;
+        color: var(--dim);
+      }
+      .step b {
+        font: 800 15px var(--mono);
+        color: var(--text);
+      }
+      .step.mod b {
+        color: var(--acc);
+      }
+      #sLane {
+        touch-action: none;
+        cursor: grab;
+      }
+      .lyr .sync {
+        font: 700 9px var(--mono);
+        letter-spacing: 1px;
+        color: var(--acc);
+        margin-top: 2px;
+      }
+      .item b[data-ren] {
+        cursor: text;
+      }
+      .item input {
+        width: 100%;
+        min-height: 0;
+        height: 30px;
+        font-size: 13px;
       }
       /* the lane: target notes and your voice over time */
       .lane {
@@ -567,8 +640,27 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         white-space: nowrap;
       }
       /* song view */
-      .lyr {
+      .lyrRow {
         flex: none;
+        display: flex;
+        gap: 4px;
+        min-height: 58px;
+      }
+      .nudge {
+        flex: none;
+        width: 30px;
+        min-height: 0;
+        padding: 0;
+        font: 800 18px var(--mono);
+        color: var(--acc);
+      }
+      .lyr {
+        flex: 1;
+        min-width: 0;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
         min-height: 58px;
         padding: 6px 10px;
         border-radius: 8px;
@@ -591,6 +683,121 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         line-height: 1.3;
         margin-top: 3px;
         min-height: 17px;
+      }
+      .lyr .lp,
+      .lyr .l2 {
+        display: none;
+      }
+      .lyr .off {
+        position: absolute;
+        top: 3px;
+        right: 6px;
+        font: 700 9px var(--mono);
+        color: var(--acc);
+        opacity: 0;
+        transition: opacity 0.3s;
+      }
+      .lyr .off.show {
+        opacity: 1;
+      }
+      /* big lyrics: the lyrics and the lane share the lane's space half and half */
+      #song.big .lyrRow {
+        flex: 1 1 0;
+      }
+      #song.big .lyrRow + .lane {
+        flex: 1 1 0;
+        min-height: 80px;
+      }
+      #song.big .lyr .l0 {
+        font-size: clamp(22px, 7vw, 34px);
+        line-height: 1.2;
+      }
+      #song.big .lyr .l1 {
+        font-size: clamp(17px, 5vw, 24px);
+        margin-top: 10px;
+      }
+      #song.big .lyr .lp,
+      #song.big .lyr .l2 {
+        display: block;
+        font-size: clamp(14px, 4vw, 19px);
+        color: var(--dim);
+        opacity: 0.6;
+        min-height: 1.3em;
+      }
+      #song.big .lyr .lp {
+        margin-bottom: 10px;
+      }
+      #song.big .lyr .l2 {
+        margin-top: 8px;
+      }
+      #song.big .lyr.plain {
+        max-height: none;
+        font-size: clamp(16px, 4.6vw, 22px);
+        color: var(--text);
+      }
+      #lyGo {
+        flex: none;
+        width: 74px;
+        min-height: 0;
+        height: 44px;
+        padding: 0 2px;
+        font-size: 12px;
+        font-weight: 800;
+        line-height: 1.1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+      #lyGo i {
+        font-style: normal;
+        font-size: 7.5px;
+        letter-spacing: 0.5px;
+        color: var(--dim);
+      }
+      #lyGo.arm {
+        background: var(--hot);
+        border-color: var(--hot);
+        color: var(--ink);
+        animation: arm 0.8s ease-in-out infinite alternate;
+      }
+      #lyGo.arm i {
+        color: var(--ink);
+      }
+      @keyframes arm {
+        to {
+          box-shadow: 0 0 14px var(--hot);
+        }
+      }
+      #hAt.on {
+        background: var(--acc2);
+        border-color: var(--acc2);
+        color: var(--ink2);
+      }
+      #atStyle button {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        line-height: 1.15;
+      }
+      .sheetBg {
+        position: fixed;
+        inset: 0;
+        z-index: 75;
+        background: rgba(0, 0, 0, 0.55);
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+      }
+      .sheetBg[hidden] {
+        display: none;
+      }
+      .sheetBg .card {
+        width: 100%;
+        max-width: 520px;
+        max-height: 86%;
+        overflow-y: auto;
+        margin: 0 0 calc(6px + env(safe-area-inset-bottom));
       }
       .lyr.plain {
         text-align: left;
@@ -751,6 +958,12 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         grid-template-columns: repeat(3, 1fr);
         gap: 4px;
       }
+      #nnBar {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 4px;
+        margin-bottom: 6px;
+      }
       .card h3 {
         margin: 0 0 8px;
         font-size: 11px;
@@ -826,7 +1039,8 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         .pads .sq {
           min-height: 42px;
         }
-        .lyr {
+        .lyr,
+        .lyrRow {
           min-height: 48px;
         }
       }
@@ -841,9 +1055,6 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
           ><span class="l" style="--i: 2">N</span><span class="l" style="--i: 3">G</span><b>.</b></span
         ><span class="sub">Pocket</span>
       </button>
-      <label class="bpm" title="Song key: semitones up or down, tempo unchanged"
-        ><span class="bl">KEY</span><input id="key" type="number" min="-12" max="12" value="0"
-      /></label>
       <div id="hViews" class="pk-only">
         <button data-v="warm" class="on" title="Warm-ups">
           <svg class="ic" viewBox="0 0 24 24"><path d="M12 3c3 4 5 6 5 10a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-5 1-9z" /></svg></button
@@ -851,11 +1062,14 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
           <svg class="ic" viewBox="0 0 24 24"><path d="M9 18V5l11-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="17" cy="16" r="3" /></svg>
         </button>
       </div>
+      <button id="hAt" title="Autotune: live, and tuned copies of recordings">
+        <svg class="ic" viewBox="0 0 24 24"><path d="M3 17h4v-4h4V9h4v4h6" /><circle cx="19" cy="6" r="2" /></svg>
+      </button>
       <button id="rec" class="rec" title="Record a take">●</button>
       <button id="play" class="big" title="Play / stop">▶</button>
       <!-- a view button like the ones in #hViews, kept apart so it can sit last in the header -->
-      <button id="hTakes" data-v="takes" title="Songs, takes, theme and help">
-        <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3M8 21h8" /></svg>
+      <button id="hTakes" data-v="takes" title="Files: songs and recordings, theme, help">
+        <svg class="ic" viewBox="0 0 24 24"><path d="M5 4h11l3 3v13H5z" /><path d="M8 4v5h7V4M8 20v-6h8v6" /></svg>
       </button>
     </header>
 
@@ -883,10 +1097,22 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
       <!-- SONG PRACTICE -->
       <section id="song">
         <div class="prow">
-          <label class="dd" style="flex: 2.2"><span id="songTxt"></span></label>
-          <label class="dd"><span id="tempoTxt"></span><select id="tempo" title="Speed (pitch unchanged)"></select></label>
+          <button class="dd" id="songDd" title="Open a song"><span id="songTxt"></span></button>
         </div>
-        <div class="lyr" id="lyr"><div class="l0" id="ly0"></div><div class="l1" id="ly1"></div></div>
+        <div class="prow">
+          <div class="step" id="kStep" title="Key: semitones up or down, speed unchanged. Tap the middle to reset.">
+            <button data-d="-1">−</button><span data-d="0"><i>KEY</i><b id="keyTxt">0</b></span><button data-d="1">+</button>
+          </div>
+          <button id="lyGo" title="Press the moment the first word is sung: the lyrics start there"><i>FIRST WORD</i>LYRICS</button>
+          <div class="step" id="tStep" title="Speed, key unchanged. Tap the middle to reset.">
+            <button data-d="-1">−</button><span data-d="0"><i>SPEED</i><b id="tempoTxt">100%</b></span><button data-d="1">+</button>
+          </div>
+        </div>
+        <div class="lyrRow" id="lyrRow">
+          <button class="nudge" id="lyEarly" title="Lyrics earlier (0.1 s)">−</button>
+          <div class="lyr" id="lyr" title="Tap to make the lyrics bigger (tap again for normal)"></div>
+          <button class="nudge" id="lyLate" title="Lyrics later (0.1 s)">+</button>
+        </div>
         <div class="lane" id="sLane">
           <canvas id="sCv"></canvas>
           <div class="hud"><div class="n" id="sNote">—</div><div class="c" id="sCents"></div><div class="t" id="sTime"></div></div>
@@ -910,8 +1136,32 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
           <div class="vol"><i id="recVol"></i></div>
         </div>
         <div class="card list" id="list"></div>
+        <div class="card fpanel" data-fp="files" hidden>
+          <h3>Files</h3>
+          <div class="row">
+            <button id="fSong" style="flex: 1">OPEN SONG OR VIDEO</button><button id="fImport" style="flex: 1">IMPORT RECORDING</button>
+          </div>
+          <input type="file" id="impFile" accept="audio/*,video/*,.mp3,.m4a,.aac,.wav,.ogg,.opus,.webm,.mp4" hidden />
+          <div class="hint">
+            A video gives its sound: only the sound is kept (compressed), and SAVE on the song exports it as an audio
+            file.
+          </div>
+          <h3 style="margin-top: 12px">Storage</h3>
+          <div class="hint" id="storeTxt">—</div>
+        </div>
         <div class="card fpanel" data-fp="opts" hidden>
-          <h3>Pitch test</h3>
+          <h3>Note names</h3>
+          <div id="nnBar"><button data-nn="abc">A B C</button><button data-nn="sol">DO RE MI</button></div>
+          <div class="hint">Letters or solfège, for every app: TRACK, TUNE and SING.Pocket.</div>
+          <h3 style="margin-top: 12px">Recording</h3>
+          <div class="row">
+            <button id="oBack" style="flex: 1"></button>
+          </div>
+          <div class="hint">
+            Recordings are compressed (Opus or AAC, about 0.7 MB a minute). With BACKING on, a warm-up or a song
+            take records the piano or the song together with your voice, like a performance; off records only you.
+          </div>
+          <h3 style="margin-top: 12px">Pitch test</h3>
           <div class="row">
             <button id="oFree" style="flex: 1"></button>
           </div>
@@ -919,8 +1169,6 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
             With OCTAVE-FREE on, singing a song an octave lower or higher than the original counts as in tune (most
             men singing a woman's song, and the other way round).
           </div>
-          <h3 style="margin-top: 12px">Storage</h3>
-          <div class="hint" id="storeTxt">—</div>
         </div>
         <div class="card fpanel" data-fp="theme" hidden>
           <h3>Theme</h3>
@@ -930,8 +1178,9 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
           </div>
         </div>
         <div class="prow" id="tTabs">
-          <button data-fpb="opts"><i>PITCH TEST</i>OPTIONS</button>
+          <button data-fpb="files"><i>OPEN · IMPORT</i>FILES</button>
           <button data-fpb="theme"><i>LOOK</i>THEME</button>
+          <button data-fpb="opts"><i>SETTINGS</i>OPTIONS</button>
           <button id="helpBtn"><i>MANUAL</i>HELP</button>
         </div>
       </section>
@@ -949,9 +1198,64 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
           follow the song; plain lyrics are shown as text.
         </div>
         <div id="lyRes"></div>
+        <h3 style="margin-top: 10px">Timing</h3>
+        <div class="row">
+          <button id="lyM" style="flex: 1">−0.5 s</button><b id="lyOff" style="flex: 1.2; text-align: center; font: 800 14px var(--mono)">0.0 s</b
+          ><button id="lyP" style="flex: 1">+0.5 s</button><button id="lyAuto" style="flex: 1.3">AUTO</button>
+        </div>
+        <div class="hint" style="margin-bottom: 6px">
+          If the lyrics run early or late (a karaoke or live version, a long intro), move them here. AUTO lines the
+          first line up with where the voice starts. Quickest: FIRST WORD · LYRICS (between KEY and SPEED), pressed the
+          moment the singing starts; then − and + beside the lyrics for fine-tuning.
+        </div>
         <h3 style="margin-top: 10px">Or paste them</h3>
         <div class="row"><textarea id="lyText" placeholder="Plain text, or LRC lines like [00:12.30] First line"></textarea></div>
         <div class="row"><button id="lyClear" style="flex: 1">REMOVE</button><button id="lySave" class="on" style="flex: 2">USE THESE LYRICS</button></div>
+      </div>
+    </div>
+    <!-- autotune: the key and style, LIVE through headphones, and tuned copies of recordings -->
+    <div id="atSheet" class="sheetBg" hidden>
+      <div class="card" role="dialog" aria-modal="true">
+        <div class="row"><h3 style="flex: 1; margin: 0">Autotune</h3><button id="atClose">✕</button></div>
+        <div class="row">
+          <label class="dd" style="flex: 1; height: 46px"><span id="atKeyTxt"></span><select id="atKey" title="The notes the voice is pulled to"></select></label>
+        </div>
+        <div class="row" id="atStyle">
+          <button data-st="nat" style="flex: 1">NATURAL<i>KEEPS YOUR VIBRATO</i></button
+          ><button data-st="hard" style="flex: 1">HARD<i>THE ROBOT EFFECT</i></button>
+        </div>
+        <h3 style="margin-top: 10px">Live</h3>
+        <div class="row"><button id="atLive" style="flex: 1"></button></div>
+        <label class="knob" style="margin: 4px 0"
+          ><i>MONITOR</i><b id="atMonTxt"></b><input id="atMon" type="range" min="0" max="1.5" step="0.01" value="1"
+        /></label>
+        <div class="hint">
+          Use headphones: you hear your tuned voice about 40 ms late (wired is best; Bluetooth adds its own delay).
+          Through the speaker it would howl. While LIVE is on, recordings keep the tuned voice.
+        </div>
+        <div id="atTake" hidden>
+          <h3 style="margin-top: 12px">This recording</h3>
+          <div class="hint" id="atTakeTxt"></div>
+          <div class="row"><button id="atGo" class="on" style="flex: 1">MAKE A TUNED COPY</button></div>
+        </div>
+      </div>
+    </div>
+    <!-- vocal reference: what it is, pick a file, or go back to the song's own melody -->
+    <div id="vref" class="sheetBg" hidden>
+      <div class="card" role="dialog" aria-modal="true">
+        <div class="row"><h3 style="flex: 1; margin: 0">Vocal reference</h3><button id="vrClose">✕</button></div>
+        <p class="hint" style="margin: 0 0 8px">
+          The pitch test compares your voice with a melody. By default the app finds that melody in the song itself,
+          which works well for clear vocals and gets confused by loud guitars, synths or backing vocals.
+        </p>
+        <p class="hint" style="margin: 0 0 10px">
+          If you have a <b>vocal-only version</b> of the same song (an a cappella or an isolated vocal track, with the
+          same timing), pick it here: the app reads the melody from it instead. You still hear the full song; the vocal
+          file is only used for scoring.
+        </p>
+        <div class="hint" id="vrNow" style="margin-bottom: 8px"></div>
+        <div class="row"><button id="vrPick" class="on" style="flex: 1">PICK A VOCAL FILE</button></div>
+        <div class="row"><button id="vrSong" style="flex: 1">USE THE SONG'S OWN MELODY</button></div>
       </div>
     </div>
     <div id="help" hidden>
@@ -1006,7 +1310,17 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
       const A4 = 440;
       const midiToHz = (m) => A4 * Math.pow(2, (m - 69) / 12);
       const hzToMidi = (f) => 12 * Math.log2(f / A4) + 69;
-      const noteName = (m) => NOTE_NAMES[((Math.round(m) % 12) + 12) % 12].replace("#", "♯") + (Math.floor(Math.round(m) / 12) - 1);
+      // Note names on screen: letters (C D E...) or solfège (Do Re Mi...). One setting, "pocket.notes", shared by the
+      // three Pocket apps (TRACK, TUNE, SING) when they are served from the same site.
+      const SOLF = { C: "Do", D: "Re", E: "Mi", F: "Fa", G: "Sol", A: "La", B: "Si" };
+      let NOTES_SOL = false;
+      try {
+        NOTES_SOL = localStorage.getItem("pocket.notes") === "sol";
+      } catch {}
+      const noteName = (m) => {
+        const n = NOTE_NAMES[((Math.round(m) % 12) + 12) % 12];
+        return (NOTES_SOL ? SOLF[n[0]] + n.slice(1) : n).replace("#", "♯") + (Math.floor(Math.round(m) / 12) - 1);
+      };
       // semitone distance folded into -6..+6 (octave-free comparison)
       const fold = (d) => ((((d + 6) % 12) + 12) % 12) - 6;
       // In the Android app the WebView ignores <a download>: write to the app cache and open the share sheet.
@@ -1049,15 +1363,18 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         key: 0, // song transposition, semitones
         tempo: 1, // song speed
         octFree: true, // pitch test ignores octave
+        backing: true, // recordings of warm-ups and song takes include the piano / the song
+        notes: true, // the piano plays the warm-up notes (else only the cue chord)
         song: null, // id of the open song
+        at: { key: "-1", style: "nat", mon: 1 }, // autotune: key ("-1" every note, "0".."11" major, "m0".."m11" minor)
       };
       try {
         Object.assign(S, JSON.parse(localStorage.getItem("sing.state") || "{}"));
       } catch {}
       function saveState() {
         try {
-          const { view, voice, ex, bpm, updown, listen, key, tempo, octFree, song } = S;
-          localStorage.setItem("sing.state", JSON.stringify({ view, voice, ex, bpm, updown, listen, key, tempo, octFree, song }));
+          const { view, voice, ex, bpm, updown, listen, key, tempo, octFree, backing, notes, song, at } = S;
+          localStorage.setItem("sing.state", JSON.stringify({ view, voice, ex, bpm, updown, listen, key, tempo, octFree, backing, notes, song, at }));
         } catch {}
       }
       let dbP;
@@ -1140,7 +1457,7 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         }
       }
       function micStop() {
-        if (REC.on) return; // a recording keeps the mic
+        if (REC.on || (AT && AT.live)) return; // a recording, or live autotune, keeps the mic
         MIC.on = false;
         if (MIC.stream) MIC.stream.getTracks().forEach((t) => t.stop());
         MIC.stream = MIC.src = MIC.an = null;
@@ -1210,58 +1527,113 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
       // ======================================================================
       // recording takes (mic -> 22.05 kHz mono, 16 bit)
       // ======================================================================
-      const REC = { on: false, kind: "", chunks: [], proc: null, t0: 0, pitch: [], meta: null };
+      // A take is compressed by the phone's own encoder (MediaRecorder: Opus in WebM, or AAC in MP4 on Apple).
+      // The voice goes in as it is; the backing (the song or the warm-up piano) is delayed by the round trip through
+      // the speaker, the room and the microphone, so that it lines up with what you sang over it.
+      const REC = { on: false, kind: "", mr: null, chunks: [], t0: 0, pitch: [], meta: null, nodes: [] };
+      function recMime() {
+        if (!window.MediaRecorder) return null;
+        for (const m of ["audio/webm;codecs=opus", "audio/mp4;codecs=mp4a.40.2", "audio/mp4", "audio/ogg;codecs=opus", "audio/webm"])
+          if (MediaRecorder.isTypeSupported(m)) return m;
+        return "";
+      }
+      const extOf = (mime) => (/mp4|aac|m4a/.test(mime) ? ".m4a" : /ogg/.test(mime) ? ".ogg" : /wav/.test(mime) ? ".wav" : /mpeg|mp3/.test(mime) ? ".mp3" : ".webm");
+      function songOut(c) {
+        if (!P.out) {
+          P.out = c.createGain();
+          P.out.connect(c.destination);
+          P.an = c.createAnalyser();
+          P.out.connect(P.an);
+        }
+        return P.out;
+      }
+      // a warm-up started while recording joins the recording's backing
+      function recBacking(node) {
+        if (REC.on && REC.bgIn && node) {
+          node.connect(REC.bgIn);
+          REC.nodes.push([node, REC.bgIn]);
+        }
+      }
       async function recStart(kind, meta = {}) {
         if (!(await micStart())) return false;
-        const c = ctx;
-        REC.on = true;
-        REC.kind = kind;
-        REC.meta = meta;
+        const mime = recMime();
+        if (mime == null) return toast("This device cannot record audio"), false;
+        const c = ctx,
+          dest = c.createMediaStreamDestination(),
+          vg = c.createGain(),
+          vin = AT.live && AT.node ? AT.node : MIC.src; // LIVE autotune: the tuned voice is recorded
+        vin.connect(vg).connect(dest);
+        REC.nodes = [[vin, vg]];
+        REC.bgIn = null;
+        REC.mr2 = null;
+        REC.chunks2 = [];
+        if (kind !== "session" && S.backing) {
+          const dl = c.createDelay(1),
+            g = c.createGain(),
+            inLat = (MIC.stream.getAudioTracks()[0].getSettings().latency || 0.02);
+          dl.delayTime.value = Math.min(0.9, outLag() + inLat + (vin === MIC.src ? 0 : atLatency(c.sampleRate) / c.sampleRate));
+          g.gain.value = 0.5;
+          dl.connect(g).connect(dest);
+          REC.bgIn = dl;
+          recBacking(kind === "song" ? songOut(c) : W.out);
+          // a second file with the voice on the left and the backing on the right, so AUTOTUNE can tune the voice
+          // alone and mix the backing back in
+          const sd = c.createMediaStreamDestination(),
+            mg = c.createChannelMerger(2);
+          vg.connect(mg, 0, 0);
+          g.connect(mg, 0, 1);
+          mg.connect(sd);
+          REC.nodes.push([vg, mg], [g, mg]);
+          try {
+            REC.mr2 = new MediaRecorder(sd.stream, mime ? { mimeType: mime, audioBitsPerSecond: 128000 } : undefined);
+            REC.mr2.ondataavailable = (e) => e.data && e.data.size && REC.chunks2.push(e.data);
+          } catch {
+            REC.mr2 = null;
+          }
+        }
+        try {
+          REC.mr = new MediaRecorder(dest.stream, mime ? { mimeType: mime, audioBitsPerSecond: 96000 } : undefined);
+        } catch {
+          REC.mr = new MediaRecorder(dest.stream);
+        }
         REC.chunks = [];
-        REC.pitch = [];
-        REC.t0 = c.currentTime;
-        REC.proc = c.createScriptProcessor(4096, 1, 1);
-        REC.proc.onaudioprocess = (e) => REC.on && REC.chunks.push(new Float32Array(e.inputBuffer.getChannelData(0)));
-        const sink = c.createGain();
-        sink.gain.value = 0; // a ScriptProcessor only runs when connected to the output
-        MIC.src.connect(REC.proc);
-        REC.proc.connect(sink).connect(c.destination);
+        REC.mr.ondataavailable = (e) => e.data && e.data.size && REC.chunks.push(e.data);
+        REC.mr.start(1000);
+        if (REC.mr2) REC.mr2.start(1000);
+        Object.assign(REC, { on: true, kind, meta, pitch: [], t0: c.currentTime });
         recFace();
         return true;
       }
       async function recStop(save = true) {
         if (!REC.on) return null;
         REC.on = false;
-        try {
-          MIC.src.disconnect(REC.proc);
-          REC.proc.disconnect();
-        } catch {}
-        recFace();
-        const n = REC.chunks.reduce((a, b) => a + b.length, 0);
-        if (!save || n < ctx.sampleRate * 0.5) return save && toast("Take too short: not kept"), null;
-        // downsample to 22.05 kHz by averaging, 16-bit
-        const step = ctx.sampleRate / 22050,
-          out = new Int16Array(Math.floor(n / step));
-        let k = 0,
-          acc = 0,
-          cnt = 0,
-          next = step;
-        let i = 0;
-        for (const ch of REC.chunks)
-          for (let j = 0; j < ch.length; j++, i++) {
-            acc += ch[j];
-            cnt++;
-            if (i + 1 >= next) {
-              if (k < out.length) out[k++] = clamp((acc / cnt) * 32767, -32768, 32767);
-              acc = cnt = 0;
-              next += step;
+        const mr = REC.mr,
+          mr2 = REC.mr2,
+          dur = ctx.currentTime - REC.t0;
+        const stopMr = (r) =>
+          new Promise((ok) => {
+            if (!r) return ok();
+            r.onstop = ok;
+            try {
+              r.stop();
+            } catch {
+              ok();
             }
-          }
+          });
+        await Promise.all([stopMr(mr), stopMr(mr2)]);
+        for (const [a, b] of REC.nodes)
+          try {
+            a.disconnect(b);
+          } catch {}
+        REC.nodes = [];
+        REC.bgIn = null;
+        recFace();
+        const blob = new Blob(REC.chunks, { type: (mr.mimeType || "audio/webm").split(";")[0] });
         REC.chunks = [];
-        const take = Object.assign(
-          { id: newId(), kind: REC.kind, date: Date.now(), rate: 22050, pcm: out, dur: out.length / 22050, pitch: REC.pitch },
-          REC.meta,
-        );
+        if (!save || dur < 1) return save && toast("Take too short: not kept"), null;
+        const take = Object.assign({ id: newId(), kind: REC.kind, date: Date.now(), blob, mime: blob.type, dur, pitch: REC.pitch }, REC.meta);
+        if (mr2 && REC.chunks2.length) take.stems = new Blob(REC.chunks2, { type: blob.type });
+        REC.chunks2 = [];
         take.name ||= (take.kind === "song" ? "Take" : take.kind === "warm" ? "Warm-up" : "Session") + " " + new Date().toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
         await dbPut("takes", take);
         renderList();
@@ -1487,6 +1859,9 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         W.out.connect(c.destination);
         W.an = c.createAnalyser();
         W.out.connect(W.an);
+        W.notesG = c.createGain();
+        W.notesG.gain.value = S.notes === false ? 0 : 1;
+        W.notesG.connect(W.out);
         W.t0 = c.currentTime + 0.1;
         // schedule everything now: cue chords, then the pattern on the piano (glides: a sine sliding along)
         for (const r of W.reps) [0, 4, 7].forEach((iv) => pluck(c, W.out, r.root + iv, W.t0 + r.cue, 1.4 * (60 / S.bpm), 0.12));
@@ -1506,8 +1881,9 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
             o.connect(g).connect(W.out);
             o.start(a);
             o.stop(b + 0.05);
-          } else if (S.notes !== false) pluck(c, W.out, p.m0, W.t0 + p.a, p.b - p.a + 0.1);
+          } else pluck(c, W.notesG, p.m0, W.t0 + p.a, p.b - p.a + 0.1);
         W.on = true;
+        recBacking(W.out);
         warmFace();
         renderWarmChips();
         loop();
@@ -1544,6 +1920,7 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         const now = W.on ? t : 0;
         drawLane($("#wCv"), { now, span: 6, head: 0.35, target: W.on ? warmTarget : () => NaN, voice: W.voice, center: W.center });
         hud($("#wLane"), $("#wNote"), $("#wCents"), W.on ? warmTarget(tv) : NaN, v.m);
+        $("#wHint").textContent = REC.on && REC.kind === "warm" ? "● REC " + mmss(ctx.currentTime - REC.t0) : (EXS.find((e) => e.id === S.ex) || EXS[1]).hint;
         if (W.on) {
           const cur = W.reps.findIndex((x) => t < x.b);
           $$("#wChips .chip").forEach((ch, i) => {
@@ -1789,22 +2166,181 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         }
         return { name: artist ? artist + " – " + title : title, title, artist };
       }
-      async function importSong(file) {
+      // ---- audio from video files. The sound track is decoded, then compressed again as Opus in an Ogg file with
+      // the phone's own encoder (WebCodecs), so the app keeps a few MB of audio instead of the whole video. Where
+      // WebCodecs is missing, the video file itself is kept.
+      const isVideo = (f) => /^video\//.test(f.type) || /\.(mp4|m4v|mov|webm|mkv|3gp)$/i.test(f.name);
+      const OGG_CRC = (() => {
+        const t = new Uint32Array(256);
+        for (let i = 0; i < 256; i++) {
+          let r = i << 24;
+          for (let k = 0; k < 8; k++) r = r & 0x80000000 ? (r << 1) ^ 0x04c11db7 : r << 1;
+          t[i] = r >>> 0;
+        }
+        return t;
+      })();
+      // one Ogg page holding whole packets (RFC 3533)
+      function oggPage(packets, granule, serial, seq, flags) {
+        const lace = [];
+        for (const p of packets) {
+          let n = p.length;
+          for (; n >= 255; n -= 255) lace.push(255);
+          lace.push(n);
+        }
+        const h = 27 + lace.length,
+          page = new Uint8Array(h + packets.reduce((a, p) => a + p.length, 0)),
+          v = new DataView(page.buffer);
+        page.set([0x4f, 0x67, 0x67, 0x53, 0, flags]);
+        v.setUint32(6, granule % 0x100000000, true);
+        v.setUint32(10, Math.floor(granule / 0x100000000), true);
+        v.setUint32(14, serial, true);
+        v.setUint32(18, seq, true);
+        page[26] = lace.length;
+        page.set(lace, 27);
+        let o = h;
+        for (const p of packets) (page.set(p, o), (o += p.length));
+        let crc = 0;
+        for (let i = 0; i < page.length; i++) crc = ((crc << 8) ^ OGG_CRC[((crc >>> 24) ^ page[i]) & 255]) >>> 0;
+        v.setUint32(22, crc, true);
+        return page;
+      }
+      // AudioBuffer -> Ogg Opus Blob (RFC 7845), or null if this device cannot encode Opus
+      async function toOggOpus(buf, label) {
+        if (!window.AudioEncoder || !window.AudioData) return null;
+        const ch = Math.min(2, buf.numberOfChannels),
+          sr = 48000,
+          cfg = { codec: "opus", sampleRate: sr, numberOfChannels: ch, bitrate: ch * 64000 };
         try {
-          busy("READING", 0);
-          const c = await getCtx(),
-            buf = await c.decodeAudioData(await file.arrayBuffer()),
-            tags = await tagsOf(file),
-            rec = Object.assign({ id: newId(), blob: file, lyrics: null, guide: false, date: Date.now() }, tags);
+          if (!(await AudioEncoder.isConfigSupported(cfg)).supported) return null;
+        } catch {
+          return null;
+        }
+        let b = buf;
+        if (buf.sampleRate !== sr || buf.numberOfChannels !== ch) {
+          const oc = new OfflineAudioContext(ch, Math.ceil(buf.duration * sr), sr),
+            src = oc.createBufferSource();
+          src.buffer = buf;
+          src.connect(oc.destination);
+          src.start();
+          b = await oc.startRendering();
+        }
+        const packets = [],
+          durs = [];
+        let head = null,
+          err = null;
+        const enc = new AudioEncoder({
+          output: (chunk, meta) => {
+            const d = new Uint8Array(chunk.byteLength);
+            chunk.copyTo(d);
+            packets.push(d);
+            durs.push(Math.round(((chunk.duration || 20000) * sr) / 1e6));
+            const ds = meta && meta.decoderConfig && meta.decoderConfig.description;
+            if (ds && !head) head = new Uint8Array(ds instanceof ArrayBuffer ? ds : ds.buffer.slice(ds.byteOffset, ds.byteOffset + ds.byteLength));
+          },
+          error: (e) => (err = e),
+        });
+        enc.configure(cfg);
+        const N = b.length,
+          step = sr / 2;
+        for (let i = 0, k = 0; i < N; i += step, k++) {
+          const n = Math.min(step, N - i),
+            data = new Float32Array(n * ch);
+          for (let c = 0; c < ch; c++) data.set(b.getChannelData(c).subarray(i, i + n), c * n);
+          const ad = new AudioData({ format: "f32-planar", sampleRate: sr, numberOfFrames: n, numberOfChannels: ch, timestamp: Math.round((i / sr) * 1e6), data });
+          enc.encode(ad);
+          ad.close();
+          if (err) throw err;
+          while (enc.encodeQueueSize > 6) await new Promise((r) => setTimeout(r, 5));
+          if (k % 20 === 0) {
+            busy(label, i / N);
+            await tick();
+          }
+        }
+        await enc.flush();
+        enc.close();
+        if (err) throw err;
+        // the encoder's own OpusHead if it gave one, else the standard one (312 samples of encoder delay)
+        if (!head || String.fromCharCode(...head.subarray(0, 8)) !== "OpusHead") {
+          head = new Uint8Array(19);
+          const v = new DataView(head.buffer);
+          head.set([..."OpusHead"].map((c) => c.charCodeAt(0)));
+          head[8] = 1;
+          head[9] = ch;
+          v.setUint16(10, 312, true);
+          v.setUint32(12, buf.sampleRate, true);
+        }
+        const pre = head[10] | (head[11] << 8),
+          vendor = new TextEncoder().encode("SING.Pocket"),
+          tags = new Uint8Array(8 + 4 + vendor.length + 4),
+          tv = new DataView(tags.buffer);
+        tags.set([..."OpusTags"].map((c) => c.charCodeAt(0)));
+        tv.setUint32(8, vendor.length, true);
+        tags.set(vendor, 12);
+        const serial = (Math.random() * 0xffffffff) >>> 0,
+          pages = [oggPage([head], 0, serial, 0, 2), oggPage([tags], 0, serial, 1, 0)];
+        let seq = 2,
+          gran = pre,
+          grp = [],
+          laces = 0;
+        packets.forEach((p, i) => {
+          grp.push(p);
+          gran += durs[i];
+          laces += Math.floor(p.length / 255) + 1;
+          const last = i === packets.length - 1;
+          if (last || laces > 200 || grp.length >= 50) {
+            pages.push(oggPage(grp, last ? pre + N : gran, serial, seq++, last ? 4 : 0));
+            grp = [];
+            laces = 0;
+          }
+        });
+        busy(null);
+        return new Blob(pages, { type: "audio/ogg" });
+      }
+      async function importSong(file) {
+        const vid = isVideo(file);
+        if (file.size > 700 * 1048576) return toast("This file is too big for the phone to open (over 700 MB)", 3000);
+        try {
+          busy(vid ? "TAKING THE SOUND FROM THE VIDEO" : "READING", 0);
+          await tick();
+          const c = await getCtx();
+          let buf;
+          try {
+            buf = await c.decodeAudioData(await file.arrayBuffer());
+          } catch (e) {
+            throw new Error(vid ? "NOVIDEO" : e.name || e.message);
+          }
+          const tags = await tagsOf(file),
+            rec = Object.assign({ id: newId(), blob: file, fileName: file.name, lyrics: null, guide: false, date: Date.now() }, tags);
+          let note = "";
+          if (vid) {
+            const ogg = await toOggOpus(buf, "COMPRESSING THE SOUND");
+            if (ogg) {
+              rec.blob = ogg;
+              rec.fromVideo = true;
+              note = ` Kept ${(ogg.size / 1048576).toFixed(1)} MB of sound instead of the ${(file.size / 1048576).toFixed(file.size < 10485760 ? 1 : 0)} MB video.`;
+            }
+          }
           Object.assign(rec, await analyseRef(buf, "FINDING THE MELODY"));
           await dbPut("songs", rec);
           await openSong(rec.id, buf);
-          toast("Ready. Tap ▶ to play, ● to sing along and test your pitch", 2600);
+          toast("Ready." + note + " ▶ plays, ● sings along and tests your pitch", 3600);
           if (!rec.lyrics) lyricsSheet(true);
         } catch (e) {
           busy(null);
-          toast("Could not open this file (" + (e.name || e.message || "error") + ")", 3000);
+          toast(
+            e.message === "NOVIDEO"
+              ? "This phone cannot read the sound of this video. MP4 and WebM work best"
+              : "Could not open this file (" + (e.name !== "Error" ? e.name : e.message || "error") + ")",
+            3200,
+          );
         }
+      }
+      // the audio file of a song, to keep or share; songs from a video give their extracted sound
+      function songFile(rec) {
+        const base = rec.name.replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "_") || "song";
+        if (rec.fromVideo) return [rec.blob, base + ".ogg"];
+        const ext = ((rec.fileName || "").match(/\.[^.]+$/) || [extOf(rec.blob.type || "")])[0];
+        return [rec.blob, base + ext];
       }
       async function openSong(id, decoded) {
         const rec = await dbGet("songs", id);
@@ -1819,6 +2355,7 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
           ref: rec.ref,
           refHop: rec.refHop,
           lyr: parseLyrics(rec.lyrics),
+          off: rec.lyrOff || 0,
           cache: new Map(),
           A: 0,
           B: 0,
@@ -1861,13 +2398,7 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
           src.loopStart = SONG.A * s;
           src.loopEnd = SONG.B * s;
         }
-        if (!P.out) {
-          P.out = c.createGain();
-          P.out.connect(c.destination);
-          P.an = c.createAnalyser();
-          P.out.connect(P.an);
-        }
-        src.connect(P.out);
+        src.connect(songOut(c));
         src.start(0, from * s);
         src.onended = () => {
           if (P.src === src) songStop();
@@ -1887,6 +2418,7 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
       }
       function songStop() {
         const was = P.on;
+        $("#lyGo").classList.remove("arm");
         songHalt();
         if (REC.on && REC.kind === "song") finishTake();
         if (was) playFace();
@@ -1902,7 +2434,7 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         renderChips();
         await songPlay(SONG.loop ? SONG.A : SONG.pos);
         REC.songFrom = songPos();
-        toast("Recording. Use headphones so the mic hears only you", 2200);
+        toast("Recording you over the song. Use headphones. ● or ▶ to stop", 2400);
       }
       async function finishTake() {
         const segs = scoreSegs(SONG.voice),
@@ -1919,7 +2451,8 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
       // the take, split by lyric lines (or 6-second passages), each scored: share of sung frames within 50 cents
       function scoreSegs(voice) {
         let bounds;
-        if (SONG.lyr && SONG.lyr.sync) bounds = SONG.lyr.lines.map((l, i, a) => [l.t, a[i + 1] ? a[i + 1].t : SONG.buf.duration, l.text]);
+        const off = SONG.off || 0;
+        if (SONG.lyr && SONG.lyr.sync) bounds = SONG.lyr.lines.map((l, i, a) => [l.t + off, a[i + 1] ? a[i + 1].t + off : SONG.buf.duration, l.text]);
         else {
           bounds = [];
           for (let t = 0; t < SONG.buf.duration; t += 6) bounds.push([t, Math.min(SONG.buf.duration, t + 6), ""]);
@@ -1981,7 +2514,7 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         }
         drawLane($("#sCv"), { now: t, span: 8 * S.tempo, head: 0.3, target, voice: SONG.voice, center: SONG.center });
         hud($("#sLane"), $("#sNote"), $("#sCents"), target(t), MIC.on ? v.m : NaN);
-        $("#sTime").textContent = mmss(t) + " / " + mmss(SONG.buf.duration);
+        $("#sTime").textContent = (REC.on && REC.kind === "song" ? "● REC " + mmss(ctx.currentTime - REC.t0) + " · " : "") + mmss(t) + " / " + mmss(SONG.buf.duration);
         lyricsAt(t);
         drawOverview(t);
       }
@@ -2017,66 +2550,86 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         g.fillStyle = css("--hi") || "#fff";
         g.fillRect(X(t) - d, 0, 2 * d, h);
       }
-      // overview: tap to jump, drag to mark a part (it becomes the loop)
-      (() => {
-        const el = $("#ovw");
-        let down = null;
-        const tAt = (e) => clamp(((e.clientX - el.getBoundingClientRect().left) / el.clientWidth) * SONG.buf.duration, 0, SONG.buf.duration);
-        el.onpointerdown = (e) => {
+      // Seeking: tap or drag the overview to go anywhere in the song; drag the lane sideways to nudge (left = later).
+      // While a finger is down the song pauses and the view follows it; it plays on from there when the finger lifts.
+      function scrub(el, at) {
+        let d = null;
+        el.addEventListener("pointerdown", (e) => {
           if (!SONG.buf) return;
           el.setPointerCapture(e.pointerId);
-          down = { t: tAt(e), x: e.clientX, drag: false };
-        };
-        el.onpointermove = (e) => {
-          if (!down) return;
-          if (Math.abs(e.clientX - down.x) > 8) down.drag = true;
-          if (down.drag) {
-            const t = tAt(e);
-            SONG.A = Math.min(down.t, t);
-            SONG.B = Math.max(down.t, t);
-            SONG.loop = false;
+          d = { x: e.clientX, t0: songPos(), was: P.on, moved: false };
+        });
+        el.addEventListener("pointermove", (e) => {
+          if (!d) return;
+          if (!d.moved && Math.abs(e.clientX - d.x) > 6) {
+            d.moved = true;
+            if (d.was) songHalt();
           }
-        };
-        el.onpointerup = (e) => {
-          if (!down) return;
-          if (down.drag) {
-            SONG.loop = SONG.B - SONG.A > 0.5;
-            if (SONG.loop) toast(`Loop ${mmss(SONG.A)}–${mmss(SONG.B)}`);
-            SONG.pos = SONG.A;
-            if (P.on) songPlay(SONG.A);
-          } else {
-            SONG.pos = down.t;
-            if (P.on) songPlay(down.t);
+          if (d.moved) {
+            SONG.pos = at(e, d);
+            songFrame();
           }
-          down = null;
-          ribFace();
+        });
+        const up = (e) => {
+          if (!d) return;
+          const dd = d;
+          d = null;
+          if (!dd.moved) {
+            const t = at(e, dd, true);
+            if (t == null) return;
+            SONG.pos = t;
+            if (P.on) songPlay(t);
+            else songFrame();
+          } else if (dd.was) songPlay(SONG.pos);
+          else songFrame();
         };
-      })();
+        el.addEventListener("pointerup", up);
+        el.addEventListener("pointercancel", up);
+      }
+      scrub($("#ovw"), (e) => {
+        const r = $("#ovw").getBoundingClientRect();
+        return clamp(((e.clientX - r.left) / r.width) * SONG.buf.duration, 0, SONG.buf.duration - 0.1);
+      });
+      scrub($("#sLane"), (e, d, tap) => (tap ? null : clamp(d.t0 - ((e.clientX - d.x) / $("#sLane").clientWidth) * 8 * S.tempo, 0, SONG.buf.duration - 0.1)));
       function renderSong() {
         const r = SONG.rec;
-        $("#songTxt").innerHTML = r ? `<i>${SONG.rec.guide ? "SONG · GUIDE VOCAL" : "SONG"}</i>${esc(r.name)}` : "<i>SONG</i>tap OPEN to load an MP3";
-        const T = [0.5, 0.6, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.05, 1.1, 1.2];
-        $("#tempo").innerHTML = T.map((x) => `<option value="${x}">${Math.round(x * 100)}%</option>`).join("");
-        $("#tempo").value = S.tempo;
-        $("#tempoTxt").innerHTML = `<i>SPEED</i>${Math.round(S.tempo * 100)}%`;
-        $("#key").value = S.key;
+        $("#songTxt").innerHTML = r ? `<i>${SONG.rec.guide ? "SONG · VOCAL REFERENCE" : SONG.rec.fromVideo ? "SONG · FROM VIDEO" : "SONG"}</i>${esc(r.name)}` : "<i>SONG</i>tap to open a song or a video";
+        stepFace();
         renderLyricsBox();
         renderChips();
         ribFace();
       }
-      $("#tempo").onchange = (e) => {
-        S.tempo = +e.target.value;
+      // KEY and SPEED steppers; a playing song picks the change up once the taps stop
+      const TEMPOS = [0.5, 0.6, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.05, 1.1, 1.2];
+      function stepFace() {
+        $("#keyTxt").textContent = (S.key > 0 ? "+" : S.key < 0 ? "−" : "") + Math.abs(S.key);
+        $("#tempoTxt").textContent = Math.round(S.tempo * 100) + "%";
+        $("#kStep").classList.toggle("mod", S.key !== 0);
+        $("#tStep").classList.toggle("mod", S.tempo !== 1);
+      }
+      let stepT = 0;
+      function stepApply() {
+        stepFace();
         saveState();
-        renderSong();
-        if (P.on) songPlay(songPos());
+        clearTimeout(stepT);
+        if (P.on) stepT = setTimeout(() => P.on && songPlay(songPos()), 450);
+      }
+      $("#kStep").onclick = (e) => {
+        const b = e.target.closest("[data-d]");
+        if (!b) return;
+        const d = +b.dataset.d;
+        S.key = d ? clamp(S.key + d, -12, 12) : 0;
+        stepApply();
       };
-      $("#key").onchange = (e) => {
-        S.key = clamp(Math.round(+e.target.value) || 0, -12, 12);
-        e.target.value = S.key;
-        saveState();
-        toast("Key " + (S.key > 0 ? "+" : "") + S.key + (S.key ? " semitones" : " (original)"));
-        if (P.on) songPlay(songPos());
+      $("#tStep").onclick = (e) => {
+        const b = e.target.closest("[data-d]");
+        if (!b) return;
+        const d = +b.dataset.d,
+          i = TEMPOS.indexOf(S.tempo);
+        S.tempo = d ? TEMPOS[clamp((i < 0 ? 8 : i) + d, 0, TEMPOS.length - 1)] : 1;
+        stepApply();
       };
+      $("#songDd").onclick = () => $("#songFile").click();
       $("#songFile").onchange = (e) => {
         const f = e.target.files[0];
         e.target.value = "";
@@ -2089,12 +2642,12 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         try {
           const c = await getCtx(),
             g = await c.decodeAudioData(await f.arrayBuffer()),
-            r = await analyseRef(g, "READING THE GUIDE VOCAL");
+            r = await analyseRef(g, "READING THE VOCAL FILE");
           Object.assign(SONG.rec, r, { guide: true });
           Object.assign(SONG, r);
           await dbPut("songs", SONG.rec);
           renderSong();
-          toast("The guide vocal is now the melody to sing against", 2400);
+          toast("Scoring against the vocal file now. You still hear the full song", 2600);
         } catch (err) {
           busy(null);
           toast("Could not read that file");
@@ -2119,11 +2672,15 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         const L = SONG.lyr;
         if (!L || !L.sync) return;
         let i = -1;
+        t -= SONG.off || 0;
         while (i + 1 < L.lines.length && L.lines[i + 1].t <= t + 0.15) i++;
         if (i === lyIdx) return;
         lyIdx = i;
-        $("#ly0").textContent = i >= 0 ? L.lines[i].text || "♪" : "";
-        $("#ly1").textContent = L.lines[i + 1] ? L.lines[i + 1].text || "♪" : "";
+        const ln = (k) => (L.lines[k] ? L.lines[k].text || "♪" : "");
+        $("#lyP").textContent = i > 0 ? ln(i - 1) : "";
+        $("#ly0").textContent = i >= 0 ? ln(i) : "";
+        $("#ly1").textContent = ln(i + 1);
+        $("#ly2").textContent = ln(i + 2);
       }
       function renderLyricsBox() {
         const box = $("#lyr"),
@@ -2137,16 +2694,18 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         } else if (!L.sync) {
           box.textContent = L.text;
           return;
-        } else box.innerHTML = '<div class="l0" id="ly0"></div><div class="l1" id="ly1"></div>';
-        if (!$("#ly0")) box.insertAdjacentHTML("afterbegin", '<span id="ly0" hidden></span><span id="ly1" hidden></span>');
+        } else box.innerHTML = '<div class="lp" id="lyP"></div><div class="l0" id="ly0"></div><div class="l1" id="ly1"></div><div class="l2" id="ly2"></div>';
+        if (!$("#ly0")) box.insertAdjacentHTML("afterbegin", '<span id="lyP" hidden></span><span id="ly0" hidden></span><span id="ly1" hidden></span><span id="ly2" hidden></span>');
+        box.insertAdjacentHTML("beforeend", '<span class="off" id="lyOffB"></span>');
         lyricsAt(songPos());
       }
       function lyricsSheet(auto) {
         if (!SONG.rec) return toast("Open a song first");
-        $("#lyArtist").value = SONG.rec.artist || "";
-        $("#lyTitle").value = SONG.rec.title || SONG.rec.name;
+        $("#lyArtist").value = cleanArtist(SONG.rec.artist || "");
+        $("#lyTitle").value = cleanTitle(SONG.rec.title || SONG.rec.name);
         $("#lyText").value = SONG.rec.lyrics || "";
         $("#lyRes").innerHTML = auto ? '<div class="hint">No lyrics yet for this song. Check the artist and title, then FIND.</div>' : "";
+        $("#lyOff").textContent = ((SONG.off || 0) > 0 ? "+" : "") + (SONG.off || 0).toFixed(1) + " s";
         $("#sheet").hidden = false;
       }
       async function lyricsSet(text) {
@@ -2156,18 +2715,55 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         $("#sheet").hidden = true;
         renderLyricsBox();
       }
+      // File names and tags carry extras the lyrics library doesn't know: "(Karaoke Version)", "[Official Video]",
+      // "- Remastered 2011", "feat. X". The search drops them and asks three ways, then puts the best matches first.
+      const cleanTitle = (t) =>
+        String(t || "")
+          .replace(/[\(\[\{][^\)\]\}]*[\)\]\}]/g, " ")
+          .replace(/\s[-–|]\s.*\b(karaoke|instrumental|lyrics?|official|video|audio|remaster(ed)?|live|version|cover|backing|track|hd|hq)\b.*$/i, "")
+          .replace(/\b(karaoke|instrumental|backing track|with lyrics|lyrics?|official (music )?video|remaster(ed)?( \d{4})?)\b/gi, " ")
+          .replace(/\s+(feat\.?|ft\.?|featuring)\s.*$/i, "")
+          .replace(/[_]+/g, " ")
+          .replace(/\s+/g, " ")
+          .trim();
+      const cleanArtist = (a) =>
+        /karaoke|various|tribute|instrumental|backing|hits|sing ?king|zzang/i.test(a || "") ? "" : String(a || "").replace(/\s+(feat\.?|ft\.?|featuring|&|x|,)\s.*$/i, "").trim();
       let lyHits = [];
       $("#lyFind").onclick = async () => {
-        const artist = $("#lyArtist").value.trim(),
-          title = $("#lyTitle").value.trim();
+        const artist = cleanArtist($("#lyArtist").value.trim()),
+          title = cleanTitle($("#lyTitle").value.trim());
         if (!title) return toast("Type the song title");
         $("#lyRes").innerHTML = '<div class="hint">Searching lrclib.net…</div>';
+        const asks = [];
+        if (artist) asks.push({ track_name: title, artist_name: artist });
+        asks.push({ track_name: title }, { q: (artist + " " + title).trim() });
         try {
-          const q = new URLSearchParams({ track_name: title });
-          if (artist) q.set("artist_name", artist);
-          const r = await fetch("https://lrclib.net/api/search?" + q);
-          if (!r.ok) throw new Error("HTTP " + r.status);
-          lyHits = (await r.json()).filter((x) => x.syncedLyrics || x.plainLyrics).slice(0, 8);
+          const lists = await Promise.all(
+            asks.map((q) =>
+              fetch("https://lrclib.net/api/search?" + new URLSearchParams(q))
+                .then((r) => (r.ok ? r.json() : []))
+                .catch(() => null),
+            ),
+          );
+          if (lists.every((l) => l == null)) throw new Error("offline");
+          const seen = new Set(),
+            dur = SONG.buf ? SONG.buf.duration : 0,
+            norm = (x) => x.toLowerCase().replace(/[^a-z0-9]+/g, "");
+          lyHits = lists
+            .flat()
+            .filter((x) => x && (x.syncedLyrics || x.plainLyrics) && !seen.has(x.id) && seen.add(x.id))
+            .map((x) => ({
+              x,
+              // exact title, same artist, timed lyrics and a similar length rank first
+              rank:
+                (norm(x.trackName) === norm(title) ? 0 : 3) +
+                (artist && norm(x.artistName).includes(norm(artist)) ? 0 : 2) +
+                (x.syncedLyrics ? 0 : 1.5) +
+                (dur && x.duration ? Math.min(3, Math.abs(x.duration - dur) / 20) : 1),
+            }))
+            .sort((a, b) => a.rank - b.rank)
+            .slice(0, 10)
+            .map((h) => h.x);
           $("#lyRes").innerHTML = lyHits.length
             ? lyHits
                 .map(
@@ -2175,9 +2771,9 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
                     `<div class="res"><div><b>${esc(x.trackName)}</b><small>${esc(x.artistName)} · ${mmss(x.duration || 0)} · ${x.syncedLyrics ? "with times" : "text only"}</small></div><button data-hit="${i}">USE</button></div>`,
                 )
                 .join("")
-            : '<div class="hint">Nothing found. Try fewer words in the title, or paste the lyrics below.</div>';
+            : '<div class="hint">Nothing found. Try just the title, check the spelling, or paste the lyrics below.</div>';
         } catch (e) {
-          $("#lyRes").innerHTML = `<div class="hint">Could not reach lrclib.net (${esc(e.message)}). Check the connection, or paste the lyrics below.</div>`;
+          $("#lyRes").innerHTML = `<div class="hint">Could not reach lrclib.net. Check the connection, or paste the lyrics below.</div>`;
         }
       };
       $("#lyRes").onclick = (e) => {
@@ -2185,8 +2781,9 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         if (!b) return;
         const x = lyHits[+b.dataset.hit];
         lyricsSet(x.syncedLyrics || x.plainLyrics);
+        SONG.off = SONG.rec.lyrOff = 0;
         if (SONG.segs) ((SONG.segs = null), renderChips());
-        toast(x.syncedLyrics ? "Lyrics with times: they follow the song" : "Plain lyrics (no times)");
+        toast(x.syncedLyrics ? "Lyrics with times. If they run early or late, tap the lyrics as the next line starts" : "Plain lyrics (no times)", 3000);
       };
       $("#lySave").onclick = () => lyricsSet($("#lyText").value.trim());
       $("#lyClear").onclick = () => lyricsSet("");
@@ -2198,65 +2795,183 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         e.target.value = "";
         if (f) $("#lyText").value = await f.text();
       };
-      $("#lyr").onclick = () => lyricsSheet();
+      // a tap on the lyrics makes them big (half of the lane's space) or normal again; no lyrics yet = find them
+      $("#lyr").onclick = () => {
+        if (!SONG.lyr) return lyricsSheet();
+        $("#song").classList.toggle("big");
+        lyIdx = -2;
+        lyricsAt(songPos());
+        if (!P.on) songFrame();
+      };
+      // − / +: lyrics 0.1 s earlier or later
+      function nudge(d) {
+        if (!SONG.lyr || !SONG.lyr.sync) return toast(SONG.lyr ? "These lyrics have no times to move" : "No lyrics yet: tap LYRICS");
+        lyricsOffset((SONG.off || 0) + d);
+        const b = $("#lyOffB");
+        if (b) {
+          b.textContent = (SONG.off > 0 ? "+" : "") + SONG.off.toFixed(1) + " s";
+          b.classList.add("show");
+          clearTimeout(b._t);
+          b._t = setTimeout(() => b.classList.remove("show"), 1200);
+        }
+      }
+      $("#lyEarly").onclick = () => nudge(-0.1);
+      $("#lyLate").onclick = () => nudge(0.1);
+      // FIRST WORD: press it the moment the singing starts; the first line of the lyrics is put there.
+      // If the song is stopped, the first press plays it from the start and the button waits (red) for the second.
+      $("#lyGo").onclick = async () => {
+        const L = SONG.lyr;
+        if (!SONG.buf) return toast("Open a song first");
+        if (!L || !L.sync) return toast(L ? "These lyrics have no times: find a version “with times” in LYRICS" : "Find the lyrics first: tap LYRICS");
+        const first = L.lines.find((l) => l.text);
+        if (!P.on) {
+          $("#lyGo").classList.add("arm");
+          await songPlay(0);
+          return toast("Press LYRICS again the moment the first word is sung", 2600);
+        }
+        $("#lyGo").classList.remove("arm");
+        const t = songPos() - outLag() * S.tempo - 0.12; // a press comes a little after the word: reaction time
+        lyricsOffset(t - first.t, "Lyrics start at " + mmss(Math.max(0, t)) + ", saved with the song");
+      };
+      async function lyricsOffset(off, msg) {
+        if (!SONG.rec) return;
+        SONG.off = SONG.rec.lyrOff = Math.round(off * 100) / 100;
+        lyIdx = -2;
+        lyricsAt(songPos());
+        $("#lyOff").textContent = (SONG.off > 0 ? "+" : "") + SONG.off.toFixed(1) + " s";
+        if (SONG.segs) SONG.segs = scoreSegs(SONG.voice || []);
+        renderChips();
+        await dbPut("songs", SONG.rec);
+        if (msg) toast(msg, 2400);
+      }
+      $("#lyM").onclick = () => lyricsOffset((SONG.off || 0) - 0.5);
+      $("#lyP").onclick = () => lyricsOffset((SONG.off || 0) + 0.5);
+      // AUTO: the first lyric line starts where the melody first holds for half a second
+      $("#lyAuto").onclick = () => {
+        const L = SONG.lyr;
+        if (!L || !L.sync) return toast("AUTO needs lyrics with times");
+        if (!SONG.ref) return toast("No melody found in this song");
+        const hop = SONG.refHop,
+          win = Math.round(0.6 / hop);
+        let f0 = -1;
+        for (let f = 0; f + win < SONG.ref.length; f++) {
+          let n = 0;
+          for (let k = 0; k < win; k++) if (SONG.ref[f + k] === SONG.ref[f + k]) n++;
+          if (n >= win * 0.7) {
+            f0 = f;
+            break;
+          }
+        }
+        const first = L.lines.find((l) => l.text);
+        if (f0 < 0 || !first) return toast("Could not find where the voice starts");
+        lyricsOffset(f0 * hop - first.t, "First line moved to " + mmss(f0 * hop));
+      };
 
       // ======================================================================
       // takes view: songs and recordings
       // ======================================================================
-      const TP = { src: null, id: null };
+      const TP = { src: null, id: null, url: null };
       async function takePlay(id) {
         if (TP.id === id) return takeStopPlay();
         takeStopPlay();
-        const t = await dbGet("takes", id),
-          c = await getCtx(),
-          b = c.createBuffer(1, t.pcm.length, t.rate),
-          d = b.getChannelData(0);
-        for (let i = 0; i < t.pcm.length; i++) d[i] = t.pcm[i] / 32768;
-        const s = c.createBufferSource();
-        s.buffer = b;
-        s.connect(c.destination);
-        s.start();
-        s.onended = () => TP.src === s && takeStopPlay();
-        Object.assign(TP, { src: s, id });
+        const t = await dbGet("takes", id);
+        if (t.blob) {
+          const a = new Audio((TP.url = URL.createObjectURL(t.blob)));
+          a.onended = () => TP.src === a && takeStopPlay();
+          a.play().catch(() => toast("This recording cannot be played here"));
+          Object.assign(TP, { src: a, id });
+        } else if (t.pcm) {
+          // takes recorded by the first version: raw 16-bit audio
+          const c = await getCtx(),
+            b = c.createBuffer(1, t.pcm.length, t.rate),
+            d = b.getChannelData(0);
+          for (let i = 0; i < t.pcm.length; i++) d[i] = t.pcm[i] / 32768;
+          const s = c.createBufferSource();
+          s.buffer = b;
+          s.connect(c.destination);
+          s.start();
+          s.onended = () => TP.src === s && takeStopPlay();
+          Object.assign(TP, { src: s, id });
+        }
         renderList();
+        playFace();
       }
       function takeStopPlay() {
         try {
-          TP.src && ((TP.src.onended = null), TP.src.stop());
+          if (TP.src) TP.src.pause ? TP.src.pause() : ((TP.src.onended = null), TP.src.stop());
         } catch {}
-        TP.src = TP.id = null;
+        if (TP.url) URL.revokeObjectURL(TP.url);
+        TP.src = TP.id = TP.url = null;
         renderList();
+        if (S.view === "takes") playFace();
       }
+      const fileName = (t) => t.name.replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "_") || "take";
       async function renderList() {
         const [songs, takes] = await Promise.all([dbAll("songs"), dbAll("takes")]);
         songs.sort((a, b) => b.date - a.date);
         takes.sort((a, b) => b.date - a.date);
-        const pct = (x) => (x == null ? "" : `<span class="sc" style="color:var(${x >= 0.7 ? "--acc" : x >= 0.4 ? "--acc2" : "--hot"})">${Math.round(x * 100)}%</span>`);
+        const pct = (x) => (x == null ? "" : `<span class="sc" style="color:var(${x >= 0.7 ? "--acc" : x >= 0.4 ? "--acc2" : "--hot"})">${Math.round(x * 100)}%</span>`),
+          kind = (t) =>
+            t.kind === "song"
+              ? esc(t.songName || "song") + (t.key ? " · key " + (t.key > 0 ? "+" : "") + t.key : "")
+              : t.kind === "warm"
+                ? "warm-up"
+                : t.kind === "import"
+                  ? "imported"
+                  : "free session",
+          size = (t) => (!t.blob ? "" : t.blob.size < 1048576 ? " · " + Math.max(1, Math.round(t.blob.size / 1024)) + " KB" : " · " + (t.blob.size / 1048576).toFixed(1) + " MB");
         $("#list").innerHTML =
           `<div class="grp">SONGS</div>` +
           (songs
             .map(
               (s) =>
-                `<div class="item${s.id === SONG.id ? " cur" : ""}"><div><b>${esc(s.name)}</b><small>${s.guide ? "guide vocal · " : ""}${s.lyrics ? "lyrics" : "no lyrics"}</small></div><button data-open="${s.id}">OPEN</button><button data-dels="${s.id}">✕</button></div>`,
+                `<div class="item${s.id === SONG.id ? " cur" : ""}"><div><b>${esc(s.name)}</b><small>${s.fromVideo ? "from video · " : ""}${s.guide ? "vocal reference · " : ""}${s.lyrics ? "lyrics" : "no lyrics"}${s.blob ? " · " + (s.blob.size / 1048576).toFixed(1) + " MB" : ""}</small></div><button data-open="${s.id}">OPEN</button><button data-saves="${s.id}">SAVE</button><button data-dels="${s.id}">✕</button></div>`,
             )
-            .join("") || '<div class="hint" style="padding:4px 0 8px">No songs yet: open one in the Song view.</div>') +
-          `<div class="grp" style="margin-top:10px">TAKES</div>` +
+            .join("") || '<div class="hint" style="padding:4px 0 8px">No songs yet: FILES → OPEN A SONG, or OPEN in the Song view.</div>') +
+          `<div class="grp" style="margin-top:10px">RECORDINGS</div>` +
           (takes
             .map(
               (t) =>
-                `<div class="item"><div><b>${esc(t.name)}</b><small>${mmss(t.dur)} · ${t.kind === "song" ? esc(t.songName || "song") + (t.key ? " · key " + (t.key > 0 ? "+" : "") + t.key : "") : t.kind === "warm" ? "warm-up" : "free session"}</small></div>${pct(t.score)}<button data-play="${t.id}" class="${TP.id === t.id ? "on" : ""}">${TP.id === t.id ? "■" : "▶"}</button><button data-wav="${t.id}">WAV</button><button data-delt="${t.id}">✕</button></div>`,
+                `<div class="item"><div><b data-ren="${t.id}" title="Tap to rename">${esc(t.name)}</b><small>${mmss(t.dur || 0)} · ${kind(t)}${t.tuned ? " · autotuned" : ""}${size(t)}</small></div>${pct(t.score)}<button data-play="${t.id}" class="${TP.id === t.id ? "on" : ""}">${TP.id === t.id ? "■" : "▶"}</button><button data-tune="${t.id}">TUNE</button><button data-save="${t.id}">SAVE</button><button data-delt="${t.id}">✕</button></div>`,
             )
-            .join("") || '<div class="hint" style="padding:4px 0">No takes yet. Tap ● here to record a free session, or ● in the Song view to sing along.</div>');
+            .join("") ||
+            '<div class="hint" style="padding:4px 0">No recordings yet. ● records: a warm-up in Warm-up, you singing along in Song, a free session here.</div>');
         storageNote();
       }
       async function storageNote() {
         try {
           const { usage = 0, quota = 0 } = await navigator.storage.estimate();
-          $("#storeTxt").textContent = `Songs and takes use ${(usage / 1048576).toFixed(1)} MB on this device${quota ? " of " + Math.round(quota / 1048576) + " MB available to the app" : ""}. Delete old takes to free space; export the ones to keep as WAV.`;
+          $("#storeTxt").textContent = `Songs and recordings use ${(usage / 1048576).toFixed(1)} MB on this device${quota ? " of " + Math.round(quota / 1048576) + " MB available to the app" : ""}. Delete old recordings to free space; SAVE the ones you want to keep.`;
         } catch {}
       }
       const armed = new Set();
+      // tap a recording's name to rename it
+      async function renameTake(el) {
+        const id = el.dataset.ren,
+          t = await dbGet("takes", id),
+          inp = document.createElement("input");
+        inp.type = "text";
+        inp.value = t.name;
+        el.replaceWith(inp);
+        inp.focus();
+        inp.select();
+        let done = false;
+        const finish = async (keep) => {
+          if (done) return;
+          done = true;
+          const v = inp.value.trim();
+          if (keep && v && v !== t.name) {
+            t.name = v.slice(0, 80);
+            await dbPut("takes", t);
+          }
+          renderList();
+        };
+        inp.onkeydown = (e) => (e.key === "Enter" ? finish(true) : e.key === "Escape" ? finish(false) : 0);
+        inp.onblur = () => finish(true);
+      }
       $("#list").onclick = async (e) => {
+        const r = e.target.closest("[data-ren]");
+        if (r) return renameTake(r);
         const b = e.target.closest("button");
         if (!b) return;
         const d = b.dataset;
@@ -2264,9 +2979,12 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
           await openSong(d.open);
           showView("song");
         } else if (d.play) takePlay(d.play);
-        else if (d.wav) {
-          const t = await dbGet("takes", d.wav);
-          download(wavBlob(t.pcm, t.rate), t.name.replace(/[^\w-]+/g, "_") + ".wav");
+        else if (d.tune) atOpen(d.tune);
+        else if (d.saves) download(...songFile(await dbGet("songs", d.saves)));
+        else if (d.save) {
+          const t = await dbGet("takes", d.save);
+          if (t.blob) download(t.blob, fileName(t) + extOf(t.blob.type || t.mime || ""));
+          else download(wavBlob(t.pcm, t.rate), fileName(t) + ".wav");
         } else if (d.dels || d.delt) {
           const id = d.dels || d.delt;
           if (!armed.has(id)) {
@@ -2293,6 +3011,272 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
           renderList();
         }
       };
+      // ======================================================================
+      // autotune
+      // ======================================================================
+      // An AudioWorklet tracks the pitch of the voice and moves it to the nearest allowed note with TD-PSOLA: grains two
+      // periods long, cut at the voice's pitch marks and laid down closer together (higher) or further apart (lower), so
+      // the timbre and the length stay. NATURAL corrects the slow centre of the note (vibrato and slides survive);
+      // HARD corrects every moment (the robot effect). The same processor runs LIVE (mic -> headphones, and into
+      // recordings) and offline, to make a tuned copy of a recording. The output is late by atLatency() samples.
+      const atLatency = (sr) => Math.round(sr * 0.034) + 128;
+      const AT_CODE = `
+class AutoTune extends AudioWorkletProcessor {
+  constructor(o) {
+    super();
+    this.N = 1 << 16; this.M = this.N - 1;
+    this.inb = new Float32Array(this.N); this.acc = new Float32Array(this.N);
+    this.t = 0; this.L = Math.round(sampleRate * 0.034) + 128;
+    this.D = Math.max(1, Math.round(sampleRate / 12000)); this.dsN = 1024; this.ds = new Float32Array(this.dsN); this.dsi = 0; this.dsA = 0; this.dsC = 0;
+    this.f0 = 0; this.cs = 0; this.ctr = 0; this.voiced = 0; this.since = 0;
+    this.am = 0; this.mk = []; this.ts = 0;
+    this.allowed = [1,1,1,1,1,1,1,1,1,1,1,1]; this.hard = false; this.amount = 1;
+    Object.assign(this, (o && o.processorOptions) || {});
+    this.port.onmessage = (e) => Object.assign(this, e.data);
+  }
+  detect() {
+    const sr = sampleRate / this.D, W = 384, minLag = Math.max(2, Math.floor(sr / 1000)), maxLag = Math.ceil(sr / 80), K = W - maxLag;
+    const x = new Float32Array(W);
+    for (let i = 0; i < W; i++) x[i] = this.ds[(this.dsi - W + i + this.dsN) % this.dsN];
+    let e = 0;
+    for (let i = 0; i < W; i++) e += x[i] * x[i];
+    if (Math.sqrt(e / W) < 0.012) return 0;
+    const c = new Float32Array(maxLag + 2);
+    for (let lag = 0; lag <= maxLag + 1; lag++) { let s = 0; for (let j = 0; j < K; j++) s += x[j] * x[j + lag]; c[lag] = s; }
+    let d = minLag;
+    while (d < maxLag && c[d] > c[d + 1]) d++;
+    let best = -1, bv = -Infinity;
+    for (let i = d; i <= maxLag; i++) if (c[i] > bv) { bv = c[i]; best = i; }
+    if (best < 1 || c[0] <= 0 || bv / c[0] < 0.45) return 0;
+    for (let i = d; i < best; i++) if (c[i] > bv * 0.9 && c[i] >= c[i - 1] && c[i] >= c[i + 1]) { best = i; break; }
+    let T = best;
+    const a = (c[T - 1] + c[T + 1] - 2 * c[T]) / 2, b = (c[T + 1] - c[T - 1]) / 2;
+    if (a) T -= b / (2 * a);
+    return sr / T;
+  }
+  nearest(m) {
+    const r = Math.round(m); let best = r, bd = 99;
+    for (let k = r - 6; k <= r + 6; k++) if (this.allowed[((k % 12) + 12) % 12] && Math.abs(k - m) < bd) { bd = Math.abs(k - m); best = k; }
+    return best;
+  }
+  update() {
+    const f = this.detect();
+    if (f > 0) {
+      const m = 12 * Math.log2(f / 440) + 69;
+      if (!this.voiced || Math.abs(m - this.ctr) > 1.5) this.ctr = m; else this.ctr = this.ctr * 0.9 + m * 0.1;
+      this.voiced = 1; this.f0 = f;
+      const base = this.hard ? m : this.ctr, c = (this.nearest(base) - base) * this.amount;
+      this.cs = this.hard ? c : this.cs * 0.8 + c * 0.2;
+    } else { this.voiced = 0; this.f0 = 0; this.cs *= 0.5; }
+  }
+  marks() {
+    const U = Math.round(sampleRate * 0.01);
+    for (;;) {
+      const P = this.f0 > 0 ? Math.round(sampleRate / this.f0) : U;
+      let nx = this.am + P;
+      const q = this.f0 > 0 ? P >> 2 : 0;
+      if (nx + q + 1 > this.t) break;
+      if (q) { let best = nx, bv = -1e9; for (let k = nx - q; k <= nx + q; k++) { const v = this.inb[k & this.M]; if (v > bv) { bv = v; best = k; } } nx = best; }
+      this.am = nx;
+      this.mk.push([nx, P, this.f0 > 0 ? Math.pow(2, this.cs / 12) : 1]);
+      if (this.mk.length > 48) this.mk.shift();
+    }
+  }
+  synth() {
+    for (;;) {
+      if (!this.mk.length || this.am < this.ts) return;
+      let m = this.mk[0], bd = 1e18;
+      for (const k of this.mk) { const d = Math.abs(k[0] - this.ts); if (d < bd) { bd = d; m = k; } }
+      const [c, P, r] = m;
+      if (c + P > this.t) return;
+      const read = this.t - this.L;
+      if (this.ts - P < read) this.ts = read + P;
+      const g = 1 / r, b = Math.round(this.ts);
+      for (let k = -P; k < P; k++) this.acc[(b + k) & this.M] += this.inb[(c + k) & this.M] * (0.5 + 0.5 * Math.cos(Math.PI * k / P)) * g;
+      this.ts += P / r;
+    }
+  }
+  process(inputs, outputs) {
+    const inp = inputs[0] && inputs[0][0], out = outputs[0][0];
+    if (!out) return true;
+    const n = out.length;
+    for (let i = 0; i < n; i++) {
+      const v = inp ? inp[i] : 0;
+      this.inb[(this.t + i) & this.M] = v;
+      this.dsA += v;
+      if (++this.dsC === this.D) { this.ds[this.dsi] = this.dsA / this.D; this.dsi = (this.dsi + 1) % this.dsN; this.dsA = 0; this.dsC = 0; }
+    }
+    this.t += n;
+    if ((this.since += n) >= 256) { this.since = 0; this.update(); }
+    this.marks();
+    this.synth();
+    for (let i = 0; i < n; i++) { const k = (this.t - n + i - this.L) & this.M; out[i] = this.acc[k]; this.acc[k] = 0; }
+    for (let ch = 1; ch < outputs[0].length; ch++) outputs[0][ch].set(out);
+    return true;
+  }
+}
+registerProcessor("autotune", AutoTune);
+`;
+      let atUrl = null;
+      const atModule = async (c) => {
+        atUrl ||= "data:application/javascript," + encodeURIComponent(AT_CODE); // a data: URL also loads from file://
+        if (!c.__at) await c.audioWorklet.addModule(atUrl), (c.__at = true);
+      };
+      // the notes the voice is pulled to
+      function atParams() {
+        const k = S.at.key,
+          all = k === "-1",
+          minor = k.startsWith("m"),
+          root = all ? 0 : +k.replace("m", ""),
+          ivs = minor ? [0, 2, 3, 5, 7, 8, 10] : [0, 2, 4, 5, 7, 9, 11],
+          allowed = Array.from({ length: 12 }, (_, pc) => (all || ivs.includes((pc - root + 12) % 12) ? 1 : 0));
+        return { allowed, hard: S.at.style === "hard", amount: S.at.style === "hard" ? 1 : 0.85 };
+      }
+      var AT = { live: false, node: null, mon: null, take: null, busy: false }; // var: micStop() can run before this line
+      async function atLiveOn() {
+        if (!(await micStart())) return false;
+        const c = ctx;
+        if (!c.audioWorklet) return toast("This browser cannot run live autotune"), false;
+        try {
+          await atModule(c);
+        } catch {
+          return toast("This browser cannot run live autotune"), false;
+        }
+        if (!AT.node) {
+          AT.node = new AudioWorkletNode(c, "autotune", { numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [1], processorOptions: atParams() });
+          AT.mon = c.createGain();
+          AT.node.connect(AT.mon).connect(c.destination);
+        }
+        AT.node.port.postMessage(atParams());
+        AT.mon.gain.value = S.at.mon;
+        MIC.src.connect(AT.node);
+        AT.src = MIC.src;
+        AT.live = true;
+        atFace();
+        return true;
+      }
+      function atLiveOff() {
+        if (!AT.live) return;
+        AT.live = false;
+        try {
+          AT.src.disconnect(AT.node);
+        } catch {}
+        atFace();
+        if (!W.on && !REC.on && S.view !== "song") micStop();
+      }
+      function atFace() {
+        $("#hAt").classList.toggle("on", AT.live);
+        $("#atLive").textContent = "LIVE AUTOTUNE: " + (AT.live ? "ON" : "OFF");
+        $("#atLive").classList.toggle("on", AT.live);
+        $$("#atStyle [data-st]").forEach((b) => b.classList.toggle("on", b.dataset.st === S.at.style));
+        const sel = $("#atKey");
+        if (!sel.options.length) {
+          const nm = (pc) => noteName(60 + pc).replace(/-?\d+$/, "");
+          sel.innerHTML =
+            `<option value="-1">Every note (chromatic)</option>` +
+            Array.from({ length: 12 }, (_, i) => `<option value="${i}">${nm(i)} major</option><option value="m${i}">${nm(i)} minor</option>`).join("");
+        }
+        sel.value = S.at.key;
+        $("#atKeyTxt").innerHTML = `<i>NOTES</i>${esc(sel.selectedOptions[0] ? sel.selectedOptions[0].text : "")}`;
+        $("#atMon").value = S.at.mon;
+        $("#atMonTxt").textContent = Math.round(S.at.mon * 100) + "%";
+      }
+      function atSet() {
+        if (AT.node) AT.node.port.postMessage(atParams());
+        atFace();
+        saveState();
+      }
+      async function atOpen(takeId) {
+        AT.take = takeId || null;
+        $("#atTake").hidden = !takeId;
+        if (takeId) {
+          const t = await dbGet("takes", takeId);
+          $("#atTakeTxt").textContent = `“${t.name}”: a tuned copy is added to the list; the original stays.${
+            t.stems ? " The backing is mixed back in after tuning the voice." : t.kind === "song" || t.kind === "warm" ? " If this take has the backing mixed in, tuning will struggle: takes recorded from now on keep the voice apart." : ""
+          }`;
+          $("#atGo").textContent = "MAKE A TUNED COPY";
+        }
+        S.at.key = String(S.at.key);
+        atFace();
+        $("#atSheet").hidden = false;
+      }
+      // a tuned copy of a recording: the voice through the same processor in an offline context
+      async function atRender(t) {
+        const c = await getCtx(),
+          src = t.stems || t.blob || wavBlob(t.pcm, t.rate),
+          ab = await c.decodeAudioData(await src.arrayBuffer()),
+          sr = ab.sampleRate,
+          n = ab.length,
+          L = atLatency(sr),
+          oc = new OfflineAudioContext(1, n + L, sr);
+        await atModule(oc);
+        const voice = oc.createBuffer(1, n, sr),
+          v = voice.getChannelData(0);
+        if (t.stems || ab.numberOfChannels === 1) v.set(ab.getChannelData(0));
+        else {
+          const a = ab.getChannelData(0),
+            b = ab.getChannelData(1);
+          for (let i = 0; i < n; i++) v[i] = (a[i] + b[i]) / 2;
+        }
+        const node = new AudioWorkletNode(oc, "autotune", { numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [1], processorOptions: atParams() }),
+          s = oc.createBufferSource();
+        s.buffer = voice;
+        s.connect(node).connect(oc.destination);
+        s.start();
+        const y = (await oc.startRendering()).getChannelData(0).slice(L, L + n);
+        if (t.stems && ab.numberOfChannels > 1) {
+          const bk = ab.getChannelData(1);
+          for (let i = 0; i < n; i++) y[i] += bk[i];
+        }
+        let pk = 0;
+        for (let i = 0; i < n; i++) pk = Math.max(pk, Math.abs(y[i]));
+        if (pk > 0.99) for (let i = 0; i < n; i++) y[i] *= 0.97 / pk;
+        const out = c.createBuffer(1, n, sr);
+        out.getChannelData(0).set(y);
+        let blob = await toOggOpus(out, "Saving the tuned copy").catch(() => null);
+        if (!blob) {
+          const pcm = new Int16Array(n);
+          for (let i = 0; i < n; i++) pcm[i] = Math.max(-32768, Math.min(32767, Math.round(y[i] * 32767)));
+          blob = wavBlob(pcm, sr);
+        }
+        return { blob, dur: n / sr };
+      }
+      $("#hAt").onclick = () => atOpen(null);
+      $("#atClose").onclick = () => ($("#atSheet").hidden = true);
+      $("#atSheet").onclick = (e) => e.target.id === "atSheet" && ($("#atSheet").hidden = true);
+      $("#atKey").onchange = (e) => ((S.at.key = e.target.value), atSet());
+      $("#atStyle").onclick = (e) => {
+        const b = e.target.closest("[data-st]");
+        if (b) (S.at.style = b.dataset.st), atSet();
+      };
+      $("#atMon").oninput = (e) => {
+        S.at.mon = +e.target.value;
+        if (AT.mon) AT.mon.gain.value = S.at.mon;
+        atFace();
+      };
+      $("#atMon").onchange = saveState;
+      $("#atLive").onclick = async () => {
+        if (AT.live) return atLiveOff();
+        if (await atLiveOn()) toast("Live autotune on: use headphones");
+      };
+      $("#atGo").onclick = async () => {
+        if (AT.busy || !AT.take) return;
+        AT.busy = true;
+        $("#atGo").textContent = "TUNING…";
+        try {
+          const t = await dbGet("takes", AT.take),
+            { blob, dur } = await atRender(t),
+            copy = Object.assign({}, t, { id: newId(), date: Date.now(), blob, mime: blob.type, dur, stems: null, pcm: null, score: null, pitch: [], tuned: true, name: (t.name + " · tuned").slice(0, 80) });
+          await dbPut("takes", copy);
+          $("#atSheet").hidden = true;
+          renderList();
+          toast("Tuned copy added: ▶ to hear it");
+        } catch (err) {
+          toast("Could not tune this recording" + (err && err.message ? ": " + err.message : ""), 3000);
+          $("#atGo").textContent = "MAKE A TUNED COPY";
+        }
+        AT.busy = false;
+      };
       // free session: ● in this view
       function sessionFrame() {
         if (!(REC.on && REC.kind === "session")) return;
@@ -2302,6 +3286,29 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         $("#recNote").textContent = v.m === v.m ? noteName(v.m) : "—";
         $("#recVol").style.width = Math.min(100, v.rms * 500) + "%";
       }
+      $("#fSong").onclick = () => {
+        showView("song");
+        $("#songFile").click();
+      };
+      $("#fImport").onclick = () => $("#impFile").click();
+      $("#impFile").onchange = async (e) => {
+        const f = e.target.files[0];
+        e.target.value = "";
+        if (!f) return;
+        const dur = await new Promise((ok) => {
+          const a = new Audio(URL.createObjectURL(f));
+          a.onloadedmetadata = () => (URL.revokeObjectURL(a.src), ok(isFinite(a.duration) ? a.duration : 0));
+          a.onerror = () => ok(0);
+        });
+        await dbPut("takes", { id: newId(), kind: "import", name: f.name.replace(/\.[^.]+$/, ""), date: Date.now(), blob: f, mime: f.type, dur, pitch: [] });
+        renderList();
+        toast("Imported " + f.name);
+      };
+      $("#oBack").onclick = () => {
+        S.backing = !S.backing;
+        saveState();
+        oFace();
+      };
       $("#oFree").onclick = () => {
         S.octFree = !S.octFree;
         saveState();
@@ -2310,7 +3317,25 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
       const oFace = () => {
         $("#oFree").textContent = "OCTAVE-FREE: " + (S.octFree ? "ON" : "OFF");
         $("#oFree").classList.toggle("on", S.octFree);
+        $("#oBack").textContent = "BACKING IN RECORDINGS: " + (S.backing ? "ON" : "OFF");
+        $("#oBack").classList.toggle("on", S.backing);
       };
+      function notesFace() {
+        $$("#nnBar [data-nn]").forEach((b) => b.classList.toggle("on", (b.dataset.nn === "sol") === NOTES_SOL));
+      }
+      $("#nnBar").onclick = (e) => {
+        const b = e.target.closest("[data-nn]");
+        if (!b) return;
+        NOTES_SOL = b.dataset.nn === "sol";
+        try {
+          localStorage.setItem("pocket.notes", NOTES_SOL ? "sol" : "abc");
+        } catch {}
+        notesFace();
+        renderWarm();
+        renderWarmChips();
+        toast(NOTES_SOL ? "Notes: Do Re Mi" : "Notes: A B C");
+      };
+      notesFace();
       let fpOpen = null;
       function filePanel(k) {
         fpOpen = fpOpen === k ? null : k;
@@ -2325,7 +3350,7 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
       // ======================================================================
       // views, header, ribbons, the frame loop
       // ======================================================================
-      const WM = { warm: "WARM-UP", song: "SONG", takes: "TAKES" };
+      const WM = { warm: "WARM-UP", song: "SONG", takes: "FILES" };
       function showView(v) {
         if (!WM[v]) v = "warm";
         if (v !== S.view) {
@@ -2336,13 +3361,20 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         $$("main > section").forEach((s) => s.classList.toggle("show", s.id === v));
         $$("#hViews button, #hTakes").forEach((b) => b.classList.toggle("on", b.dataset.v === v));
         $("#wm").textContent = WM[v];
-        $("#key").closest(".bpm").style.visibility = v === "song" ? "" : "hidden";
+        wmFit();
         if (v === "takes") renderList();
         playFace();
         saveState();
         loop();
       }
       $$("#hViews button, #hTakes").forEach((b) => (b.onclick = () => showView(b.dataset.v)));
+      function wmFit() {
+        const w = $("#wm");
+        w.style.fontSize = "";
+        const r = (w.clientWidth * 0.94) / w.scrollWidth;
+        if (r < 1) w.style.fontSize = parseFloat(getComputedStyle(w).fontSize) * r + "px";
+      }
+      addEventListener("resize", wmFit);
       // header ●: a take of what this view does; ▶: play / stop what this view plays
       $("#rec").onclick = async () => {
         if (REC.on) {
@@ -2350,13 +3382,13 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
           if (REC.kind === "warm") return warmStop();
           await recStop();
           micStop();
-          return toast("Session saved");
+          return toast("Session saved in Files");
         }
         if (S.view === "song") return takeStart();
         if (S.view === "warm") {
           S.listen = true;
           if (!W.on) await warmStart();
-          if (W.on && (await recStart("warm", { ex: S.ex, voice: S.voice }))) toast("Recording this warm-up");
+          if (W.on && (await recStart("warm", { ex: S.ex, voice: S.voice }))) toast("Recording this warm-up. ● again to stop and keep it");
           ribFace();
           return;
         }
@@ -2408,7 +3440,7 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         rib("sB", "b", SONG.buf && SONG.B < SONG.buf.duration - 0.05 ? mmss(SONG.B) : "SET B");
         rib("sLoop", "loop", "LOOP", SONG.loop);
         rib("sLyr", "lyr", "LYRICS", !!SONG.lyr);
-        rib("sGuide", "guide", "GUIDE", SONG.rec && SONG.rec.guide);
+        rib("sGuide", "guide", "VOCAL REF", SONG.rec && SONG.rec.guide);
       }
       $("#wPlay").onclick = () => (W.on ? warmStop() : warmStart());
       $("#wListen").onclick = () => {
@@ -2425,6 +3457,8 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
       };
       $("#wNotes").onclick = () => {
         S.notes = S.notes === false;
+        if (W.on && W.notesG) W.notesG.gain.setTargetAtTime(S.notes ? 1 : 0, ctx.currentTime, 0.02);
+        saveState();
         ribFace();
         toast(S.notes ? "The piano plays the notes with you" : "Only the starting chord: find the notes yourself");
       };
@@ -2454,8 +3488,26 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
       $("#sLyr").onclick = () => lyricsSheet();
       $("#sGuide").onclick = () => {
         if (!SONG.rec) return toast("Open a song first");
-        toast("Pick a vocal-only version of this song (a cappella): the pitch test becomes exact", 2600);
+        $("#vrNow").innerHTML = SONG.rec.guide
+          ? "<b>Now:</b> scoring against the vocal file you picked."
+          : "<b>Now:</b> scoring against the melody found in the song.";
+        $("#vrSong").hidden = !SONG.rec.guide;
+        $("#vref").hidden = false;
+      };
+      $("#vrClose").onclick = () => ($("#vref").hidden = true);
+      $("#vref").onclick = (e) => e.target.id === "vref" && ($("#vref").hidden = true);
+      $("#vrPick").onclick = () => {
+        $("#vref").hidden = true;
         $("#guideFile").click();
+      };
+      $("#vrSong").onclick = async () => {
+        $("#vref").hidden = true;
+        const r = await analyseRef(SONG.buf, "FINDING THE MELODY");
+        Object.assign(SONG.rec, r, { guide: false });
+        Object.assign(SONG, r);
+        await dbPut("songs", SONG.rec);
+        renderSong();
+        toast("Scoring against the song's own melody again");
       };
       // one animation loop while anything is moving
       let raf = 0;
@@ -2840,10 +3892,10 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
               "**SING.Pocket** is a pocket vocal coach: warm-ups that follow your voice, song practice with key and speed change, A-B loops, lyrics, and a pitch test that shows where you were in tune and where you were not. The sister app of TRACK.Pocket and TUNE.Pocket. Everything runs on this phone; the only time it goes online is when you search for lyrics.",
               "## The header",
               "- **SING.** opens this manual.",
-              "- **KEY** (Song view) moves the song up or down by semitones, from −12 to +12, without changing its speed.",
-              "- The view buttons: **Warm-up**, **Song**, and **Takes** at the far right.",
-              "- **●** records a take of what the view does: the warm-up, a sing-along with the song, or a free session in Takes. Tap it again to stop and keep the take.",
+              "- The view buttons: **Warm-up**, **Song**, and **Files** (the disk) at the far right.",
+              "- **●** records what the view does: the warm-up, you singing along with the song, or a free session in Files. Tap it again to stop and keep the recording, compressed, in Files.",
               "- **▶** plays and stops what the view plays.",
+              "- The **steps** button opens **Autotune** (it glows while live autotune is on).",
               "## Microphone and headphones",
               "The first time the app listens, the phone asks for permission to use the microphone. In the Android app, if you refused it, allow it in *Settings → Apps → SING.Pocket → Permissions → Microphone*.",
               "**Use headphones** when you sing along with a song: otherwise the microphone hears the song too, and the pitch test mixes it up with your voice.",
@@ -2852,10 +3904,10 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
               "**SING.Pocket** es un entrenador vocal de bolsillo: calentamientos que siguen tu voz, práctica de canciones cambiando tono y velocidad, bucles A-B, letras y una prueba de afinación que muestra dónde afinaste y dónde no. La app hermana de TRACK.Pocket y TUNE.Pocket. Todo funciona en el teléfono; solo se conecta a internet cuando buscas una letra.",
               "## La cabecera",
               "- **SING.** abre este manual.",
-              "- **KEY** (vista Canción) sube o baja la canción en semitonos, de −12 a +12, sin cambiar su velocidad.",
-              "- Los botones de vista: **Calentamiento**, **Canción**, y **Tomas** a la derecha del todo.",
-              "- **●** graba una toma de lo que hace la vista: el calentamiento, cantar con la canción, o una sesión libre en Tomas. Tócalo otra vez para parar y guardar la toma.",
+              "- Los botones de vista: **Calentamiento**, **Canción**, y **Archivos** (el disco) a la derecha del todo.",
+              "- **●** graba lo que hace la vista: el calentamiento, tú cantando con la canción, o una sesión libre en Archivos. Tócalo otra vez para parar y guardar la grabación, comprimida, en Archivos.",
               "- **▶** reproduce y para lo que suena en la vista.",
+              "- El botón de los **escalones** abre el **Autotune** (brilla mientras el autotune en directo está activo).",
               "## Micrófono y auriculares",
               "La primera vez que la app escucha, el teléfono pide permiso para usar el micrófono. En la app de Android, si lo rechazaste, actívalo en *Ajustes → Aplicaciones → SING.Pocket → Permisos → Micrófono*.",
               "**Usa auriculares** cuando cantes con una canción: si no, el micrófono también oye la canción y la prueba de afinación la confunde con tu voz.",
@@ -2871,7 +3923,8 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
               "- Before each key the piano plays the chord: breathe, then sing the pattern.",
               "- **The lane** scrolls from right to left. The blue bars are the notes to sing; your voice is the line, **green** within 50 cents, **orange** close, **red** off. The corner shows the note and how far you are (▼ flat, ▲ sharp).",
               "- **The chips** under the lane are the keys of the exercise. Each one is coloured by how much of it you sang in tune.",
-              "- **TEMPO** sets the speed. **LISTEN** turns the microphone on or off, **PIANO / CUE ONLY** chooses whether the piano plays the notes with you or only the starting chord.",
+              "- **TEMPO** sets the speed. **LISTEN** turns the microphone on or off, **PIANO / CUE ONLY** chooses whether the piano plays the notes with you or only the starting chord (it works while the exercise plays).",
+              "- **●** records the warm-up: your voice and the piano, saved in Files.",
               "## The exercises",
               "- **Lip trill**, **Siren** and **Hum**: gentle, start with these.",
               "- **5-note scale**, **Arpeggio**, **9-note scale**: agility and range, on any vowel.",
@@ -2883,7 +3936,8 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
               "- Antes de cada tono el piano toca el acorde: respira y canta el patrón.",
               "- **El carril** se desplaza de derecha a izquierda. Las barras azules son las notas que hay que cantar; tu voz es la línea, **verde** a menos de 50 cents, **naranja** cerca, **roja** fuera. La esquina muestra la nota y cuánto te desvías (▼ bajo, ▲ alto).",
               "- **Las fichas** bajo el carril son los tonos del ejercicio. Cada una se colorea según cuánto cantaste afinado.",
-              "- **TEMPO** fija la velocidad. **LISTEN** enciende o apaga el micrófono, **PIANO / CUE ONLY** elige si el piano toca las notas contigo o solo el acorde inicial.",
+              "- **TEMPO** fija la velocidad. **LISTEN** enciende o apaga el micrófono, **PIANO / CUE ONLY** elige si el piano toca las notas contigo o solo el acorde inicial (funciona mientras suena el ejercicio).",
+              "- **●** graba el calentamiento: tu voz y el piano, guardados en Archivos.",
               "## Los ejercicios",
               "- **Lip trill** (vibración de labios), **Siren** (sirena) y **Hum** (boca cerrada): suaves, empieza por ellos.",
               "- **Escala de 5 notas**, **Arpegio**, **Escala de 9 notas**: agilidad y registro, con cualquier vocal.",
@@ -2897,64 +3951,94 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
           t: { en: "Song", es: "Canción" },
           b: {
             en: [
-              "**OPEN** loads a song from the phone: MP3, M4A, WAV, OGG, FLAC or the sound of an MP4 video. The app reads the artist and title, then finds the melody (a few seconds). Songs are kept in the app; reopen them from Takes.",
-              "- **KEY** in the header transposes the song, **SPEED** slows it down or speeds it up, each without changing the other. The first play after a change takes a moment while the song is prepared.",
-              "- **The overview** at the bottom is the whole song: tap to jump, drag to mark a part, which becomes the loop.",
+              "**OPEN** (or the song name at the top) loads a song from the phone: MP3, M4A, WAV, OGG, FLAC, or a **video** (MP4, WebM, MOV): from a video only the sound is kept, compressed to a few MB, and **SAVE** in Files exports it as an audio file. The app reads the artist and title, then finds the melody (a few seconds). Songs are kept in the app; reopen them from Files.",
+              "- **KEY − +** transposes the song by semitones (−12 to +12) without changing its speed; **SPEED − +** slows it down or speeds it up without changing its key. Tap the value in the middle to go back to the original. The first play after a change takes a moment while the song is prepared.",
+              "- **Moving around**: tap or drag **the overview** at the bottom (the whole song) to go anywhere; drag **the lane** sideways to rewind or fast-forward a little (drag right = back). The song pauses while your finger is down and plays on when you lift it.",
               "- **SET A** and **SET B** mark the start and end of a part at the playing position; **LOOP** repeats it.",
               "## Lyrics",
-              "**LYRICS** (or a tap on the lyrics box) searches **lrclib.net**, a free lyrics library, by artist and title. Lyrics with times follow the song line by line. You can also paste them or open an *.lrc* file.",
+              "**LYRICS** (or a tap on the lyrics box) searches **lrclib.net**, a free lyrics library. It ignores extras like *(Karaoke Version)* or *feat.*, so *My Way (Karaoke Version)* finds *My Way*. Lyrics with times follow the song line by line. You can also paste them or open an *.lrc* file.",
+              "- **Syncing the lyrics** (karaoke and live versions often have a different intro): press **FIRST WORD · LYRICS** (between KEY and SPEED) the moment the first word is sung. If the song is stopped, the first press plays it from the start and the button turns red, waiting for the second. Fine-tune with the small **−** and **+** beside the lyrics (0.1 s earlier or later). **AUTO** in the lyrics sheet guesses where the voice starts. The timing is saved with the song.",
+              "- **Tap the lyrics** to make them big: they take half of the space, with the line before and the two after. Tap again for normal size.",
               "## The pitch test",
-              "Tap **●** to sing along: the song plays from the loop start (or where it is) and your voice is recorded and compared with the melody. **●** or **▶** again stops and keeps the take.",
+              "Tap **●** to sing along: the song plays from the loop start (or where it is), and you are recorded over it and compared with the melody. **●** or **▶** again stops and keeps the recording in Files.",
               "- The lane shows the melody (blue) and your voice, as in the warm-ups.",
               "- After the take, **the chips** score each lyric line (or each 6-second part without timed lyrics). **Tap a red or orange chip to loop that part** and practise it, then sing it again.",
               "- The coloured strip under the overview shows the same scores along the song.",
               "## The melody, honestly",
-              "The melody is estimated from the full song, so it is a best guess: loud guitars, synths or backing vocals can fool it, and then the blue line jumps around. For an exact pitch test, load a vocal-only version of the same song (an a cappella) with **GUIDE**: it becomes the melody you sing against, while you still hear the full song.",
-              "*Why no YouTube:* downloading YouTube videos is against YouTube's terms, and its player does not let other apps change the pitch. Use songs you have as files.",
+              "The melody is estimated from the full song, so it is a best guess: loud guitars, synths or backing vocals can fool it, and then the blue line jumps around. For an exact pitch test, tap **VOCAL REF** and pick a vocal-only version of the same song (an a cappella or an isolated vocal track, same timing): its melody becomes the one you are scored against, while you still hear the full song. **USE THE SONG'S OWN MELODY** in the same dialog goes back.",
+              "*YouTube:* the app does not download from YouTube. For your own videos, YouTube Studio → Content → ⋮ → Download gives you the MP4, which OPEN takes.",
             ],
             es: [
-              "**OPEN** carga una canción del teléfono: MP3, M4A, WAV, OGG, FLAC o el sonido de un vídeo MP4. La app lee el artista y el título y busca la melodía (unos segundos). Las canciones se guardan en la app; vuelve a abrirlas desde Tomas.",
-              "- **KEY** en la cabecera transporta la canción, **SPEED** la ralentiza o acelera, cada uno sin cambiar el otro. La primera reproducción tras un cambio tarda un momento mientras se prepara la canción.",
-              "- **La vista general** de abajo es la canción entera: toca para saltar, arrastra para marcar una parte, que se convierte en el bucle.",
+              "**OPEN** (o el nombre de la canción arriba) carga una canción del teléfono: MP3, M4A, WAV, OGG, FLAC, o un **vídeo** (MP4, WebM, MOV): de un vídeo solo se guarda el sonido, comprimido a unos pocos MB, y **SAVE** en Archivos lo exporta como archivo de audio. La app lee el artista y el título y busca la melodía (unos segundos). Las canciones se guardan en la app; vuelve a abrirlas desde Archivos.",
+              "- **KEY − +** transporta la canción en semitonos (−12 a +12) sin cambiar su velocidad; **SPEED − +** la ralentiza o acelera sin cambiar su tono. Toca el valor del centro para volver al original. La primera reproducción tras un cambio tarda un momento mientras se prepara la canción.",
+              "- **Moverse**: toca o arrastra **la vista general** de abajo (la canción entera) para ir a cualquier punto; arrastra **el carril** de lado para retroceder o avanzar un poco (arrastrar a la derecha = atrás). La canción se pausa mientras tienes el dedo puesto y sigue al levantarlo.",
               "- **SET A** y **SET B** marcan el inicio y el final de una parte en la posición que suena; **LOOP** la repite.",
               "## Letras",
-              "**LYRICS** (o tocar el recuadro de la letra) busca en **lrclib.net**, una biblioteca de letras gratuita, por artista y título. Las letras con tiempos siguen la canción línea a línea. También puedes pegarlas o abrir un archivo *.lrc*.",
+              "**LYRICS** (o tocar el recuadro de la letra) busca en **lrclib.net**, una biblioteca de letras gratuita. Ignora añadidos como *(Karaoke Version)* o *feat.*, así que *My Way (Karaoke Version)* encuentra *My Way*. Las letras con tiempos siguen la canción línea a línea. También puedes pegarlas o abrir un archivo *.lrc*.",
+              "- **Sincronizar la letra** (las versiones karaoke y en directo suelen tener otra intro): pulsa **FIRST WORD · LYRICS** (entre KEY y SPEED) justo cuando se canta la primera palabra. Si la canción está parada, la primera pulsación la reproduce desde el principio y el botón se pone rojo, esperando la segunda. Ajusta con los pequeños **−** y **+** junto a la letra (0,1 s antes o después). **AUTO** en la hoja de letras adivina dónde empieza la voz. El ajuste se guarda con la canción.",
+              "- **Toca la letra** para agrandarla: ocupa la mitad del espacio, con la línea anterior y las dos siguientes. Tócala otra vez para el tamaño normal.",
               "## La prueba de afinación",
-              "Toca **●** para cantar: la canción suena desde el inicio del bucle (o desde donde esté) y tu voz se graba y se compara con la melodía. **●** o **▶** otra vez para y guarda la toma.",
+              "Toca **●** para cantar: la canción suena desde el inicio del bucle (o desde donde esté), y se te graba encima y se te compara con la melodía. **●** o **▶** otra vez para y guarda la grabación en Archivos.",
               "- El carril muestra la melodía (azul) y tu voz, como en los calentamientos.",
               "- Tras la toma, **las fichas** puntúan cada línea de la letra (o cada parte de 6 segundos sin letra con tiempos). **Toca una ficha roja o naranja para repetir esa parte en bucle** y practicarla, y vuelve a cantarla.",
               "- La franja de colores bajo la vista general muestra las mismas notas a lo largo de la canción.",
               "## La melodía, con franqueza",
-              "La melodía se estima a partir de la canción completa, así que es una aproximación: guitarras, sintetizadores o coros fuertes pueden confundirla, y entonces la línea azul salta. Para una prueba exacta, carga una versión solo voz de la misma canción (a cappella) con **GUIDE**: pasa a ser la melodía contra la que cantas, mientras sigues oyendo la canción completa.",
-              "*Por qué no YouTube:* descargar vídeos de YouTube va contra sus condiciones, y su reproductor no deja que otras apps cambien el tono. Usa canciones que tengas como archivo.",
+              "La melodía se estima a partir de la canción completa, así que es una aproximación: guitarras, sintetizadores o coros fuertes pueden confundirla, y entonces la línea azul salta. Para una prueba exacta, toca **VOCAL REF** y elige una versión solo voz de la misma canción (a cappella o la pista de voz aislada, con el mismo tiempo): su melodía pasa a ser la referencia con la que se te puntúa, mientras sigues oyendo la canción completa. **USE THE SONG'S OWN MELODY** en el mismo diálogo vuelve atrás.",
+              "*YouTube:* la app no descarga de YouTube. Para tus propios vídeos, YouTube Studio → Contenido → ⋮ → Descargar te da el MP4, que OPEN acepta.",
+            ],
+          },
+        },
+        {
+          id: "at",
+          t: { en: "Autotune", es: "Autotune" },
+          b: {
+            en: [
+              "Autotune pulls your voice to the nearest right note while keeping its sound and its timing. Open it with the **steps** button in the header, or **TUNE** on a recording.",
+              "- **NOTES**: every note (chromatic), or only the notes of a key (major or minor). With a key, a wrong note is pulled to a note of the key instead of the nearest semitone.",
+              "- **NATURAL** corrects the centre of each note and keeps your vibrato and slides. **HARD** corrects every moment: the flat, stepped robot sound of so many pop records.",
+              "## Live",
+              "**LIVE AUTOTUNE** sends your tuned voice to your headphones as you sing, about 40 ms late (wired headphones are best; Bluetooth adds its own delay). **Use headphones**: through the speaker it would howl. **MONITOR** is how loud you hear yourself. While it is on, **recordings keep the tuned voice**; the pitch test still listens to your real voice.",
+              "## Tuned copies",
+              "**TUNE** on a recording, then **MAKE A TUNED COPY**: a new recording is added (\u201c\u2026 · tuned\u201d) and the original stays. Warm-ups and song takes recorded with the backing keep a second file with the voice apart, so the voice is tuned alone and the backing is mixed back in. Older takes with the backing mixed in do not tune well.",
+            ],
+            es: [
+              "El autotune lleva tu voz a la nota correcta más cercana sin cambiar su sonido ni su ritmo. Ábrelo con el botón de los **escalones** de la cabecera, o con **TUNE** en una grabación.",
+              "- **NOTES**: todas las notas (cromático), o solo las de una tonalidad (mayor o menor). Con una tonalidad, una nota equivocada va a una nota de la tonalidad en vez de al semitono más cercano.",
+              "- **NATURAL** corrige el centro de cada nota y conserva tu vibrato y tus ligados. **HARD** corrige cada instante: el sonido robótico y escalonado de tantos discos de pop.",
+              "## En directo",
+              "**LIVE AUTOTUNE** manda tu voz afinada a los auriculares mientras cantas, unos 40 ms tarde (mejor con cable; el Bluetooth añade su propio retraso). **Usa auriculares**: por el altavoz se acoplaría. **MONITOR** es lo fuerte que te oyes. Mientras está activo, **las grabaciones guardan la voz afinada**; la prueba de afinación sigue escuchando tu voz real.",
+              "## Copias afinadas",
+              "**TUNE** en una grabación y luego **MAKE A TUNED COPY**: se añade una grabación nueva (\u201c\u2026 · tuned\u201d) y la original se queda. Los calentamientos y tomas de canción grabados con acompañamiento guardan un segundo archivo con la voz aparte, así se afina solo la voz y luego se vuelve a mezclar el acompañamiento. Las tomas antiguas con el acompañamiento mezclado no se afinan bien.",
             ],
           },
         },
         {
           id: "takes",
-          t: { en: "Takes", es: "Tomas" },
+          t: { en: "Files", es: "Archivos" },
           b: {
             en: [
-              "The last view lists your **songs** and your **takes** (recordings), newest first.",
-              "- **OPEN** reopens a song in the Song view. **✕** deletes, after a second tap.",
-              "- **▶** plays a take, **WAV** exports it (in the Android app, through the share sheet: save it to Files or send it). Song takes show their score.",
-              "- **●** in this view records a **free session**: sing anything, the timer, the note you are singing and the level show while it records.",
+              "The last view (the disk) lists your **songs** and your **recordings**, newest first.",
+              "- **OPEN** reopens a song in the Song view, **SAVE** exports its audio (for a video, the sound taken from it). **✕** deletes, after a second tap.",
+              "- **▶** plays a recording, **SAVE** exports it as a compressed audio file (in the Android app, through the share sheet: save it to Files, Drive, or send it). **Tap a name to rename it.** Song recordings show their pitch score.",
+              "- **●** in this view records a **free session**: sing anything.",
               "## The bottom bar",
-              "- **OPTIONS**: **OCTAVE-FREE** (on by default) counts singing an octave lower or higher than the original as in tune. It also shows how much space the app uses.",
+              "- **FILES**: open a song, **import** a recording (any audio file), and how much space the app uses.",
+              "- **OPTIONS**: **note names** in letters (**A B C**) or solfège (**Do Re Mi**), shared with TRACK.Pocket and TUNE.Pocket; **BACKING IN RECORDINGS** (on: warm-ups and song takes record the piano or the song with your voice, like a performance; off: only your voice); **OCTAVE-FREE** for the pitch test.",
               "- **THEME**: the six looks shared with TRACK.Pocket. On wide screens the backdrop is animated and moves with the song, the piano or your voice.",
               "- **HELP**: this manual.",
-              "Songs and takes are stored on this device only, inside the app. Uninstalling the app deletes them: export the takes you want to keep.",
+              "Recordings are compressed (Opus or AAC, about 0.7 MB a minute) and stored on this device only, inside the app. Uninstalling the app deletes them: SAVE the ones you want to keep.",
             ],
             es: [
-              "La última vista lista tus **canciones** y tus **tomas** (grabaciones), las más recientes primero.",
-              "- **OPEN** vuelve a abrir una canción en la vista Canción. **✕** borra, tras un segundo toque.",
-              "- **▶** reproduce una toma, **WAV** la exporta (en la app de Android, con el menú de compartir: guárdala en Archivos o envíala). Las tomas de canción muestran su nota.",
-              "- **●** en esta vista graba una **sesión libre**: canta lo que quieras; mientras graba se ven el tiempo, la nota que cantas y el nivel.",
+              "La última vista (el disco) lista tus **canciones** y tus **grabaciones**, las más recientes primero.",
+              "- **OPEN** vuelve a abrir una canción en la vista Canción, **SAVE** exporta su audio (de un vídeo, el sonido extraído). **✕** borra, tras un segundo toque.",
+              "- **▶** reproduce una grabación, **SAVE** la exporta como archivo de audio comprimido (en la app de Android, con el menú de compartir: guárdala en Archivos, Drive, o envíala). **Toca un nombre para cambiarlo.** Las grabaciones de canción muestran su nota de afinación.",
+              "- **●** en esta vista graba una **sesión libre**: canta lo que quieras.",
               "## La barra inferior",
-              "- **OPTIONS**: **OCTAVE-FREE** (activado por defecto) da por afinado cantar una octava más grave o más aguda que el original. También muestra cuánto espacio usa la app.",
+              "- **FILES**: abrir una canción, **importar** una grabación (cualquier archivo de audio), y cuánto espacio usa la app.",
+              "- **OPTIONS**: **nombres de las notas** en letras (**A B C**) o solfeo (**Do Re Mi**), compartido con TRACK.Pocket y TUNE.Pocket; **BACKING IN RECORDINGS** (activado: los calentamientos y tomas de canción graban el piano o la canción junto a tu voz, como una actuación; desactivado: solo tu voz); **OCTAVE-FREE** para la prueba de afinación.",
               "- **THEME**: los seis aspectos que comparte con TRACK.Pocket. En pantallas anchas el fondo está animado y se mueve con la canción, el piano o tu voz.",
               "- **HELP**: este manual.",
-              "Las canciones y tomas se guardan solo en este dispositivo, dentro de la app. Desinstalar la app las borra: exporta las tomas que quieras conservar.",
+              "Las grabaciones se comprimen (Opus o AAC, unos 0,7 MB por minuto) y se guardan solo en este dispositivo, dentro de la app. Desinstalar la app las borra: guarda con SAVE las que quieras conservar.",
             ],
           },
         },
@@ -2963,14 +4047,14 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         en: {
           title: "Help",
           close: "Close",
-          wb: "Tap the **SING.** logo (top left), or **HELP** in the Takes view, at any time to open the help manual: it explains every view and button. Start with a warm-up, and use headphones when you sing along with a song.",
+          wb: "Tap the **SING.** logo (top left), or **HELP** in the Files view (the disk), at any time to open the help manual: it explains every view and button. Start with a warm-up, and use headphones when you sing along with a song.",
           wopen: "Open the manual",
           wok: "Got it",
         },
         es: {
           title: "Ayuda",
           close: "Cerrar",
-          wb: "Toca el logo **SING.** (arriba a la izquierda), o **HELP** en la vista Tomas, en cualquier momento para abrir el manual de ayuda: explica cada vista y cada botón. Empieza con un calentamiento y usa auriculares cuando cantes con una canción.",
+          wb: "Toca el logo **SING.** (arriba a la izquierda), o **HELP** en la vista Archivos (el disco), en cualquier momento para abrir el manual de ayuda: explica cada vista y cada botón. Empieza con un calentamiento y usa auriculares cuando cantes con una canción.",
           wopen: "Abrir el manual",
           wok: "Entendido",
         },
