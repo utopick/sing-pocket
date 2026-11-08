@@ -1,5 +1,8 @@
 ![SING.Pocket](.github/banner.png)
 
+![SING.Pocket on five screens, each in a different theme](.github/readme/hero.png)
+
+
 # SING.Pocket
 
 Sing is the result of me not doing my vocal exercises daily enough. Singing has brought me a lot of happiness, and I kinda wanted something to have an excuse to practice more technique and less carpool karaoke. This is an amateurs idea of a vocal coach app, so bear with me. It kinda does what I need right now, and I hope you find it useful.
@@ -16,7 +19,6 @@ I've been adding features and tweaking a lot, so they come out not fully tested,
 
 There is a help wiki inside (también en español), with small interactive demos you can drag around: a warm-up lane, the range finder, autotune and a pocket-size plane flight.
 
-![SING.Pocket on five screens, each in a different theme](.github/readme/hero.png)
 
 <p align="center"><img src=".github/readme/demo.gif" width="320" alt="SING.Pocket in use: a warm-up following the voice, a flight of the plane, the sampler and live autotune"></p>
 
@@ -35,6 +37,8 @@ No ads, no cookies, no nothing. This is free and clean. No hidden stealers, no w
 
 Why is it free? Because not everything should be a product.
 
+![A strip of SING.Pocket screens](.github/readme/strip.png)
+
 ## AI use
 
 I'm a programmer and I have been coding for a living for over two decades, but life has given me too little free time that I want to spend offline and outside, making music and art. So I used a lot of AI to build this in a quick and easy way.
@@ -47,7 +51,9 @@ I did waste a lot of tokens by making it code it in a non-minified way, so if th
 
 If you want to try something made by me by hand (95%, I did use an early model to find some bugs but solved them by hand) in which I made the code, assets, music and all, check out Nanaya, my Pico-8 tower defense game: https://www.lexaloffle.com/bbs/?tid=153336
 
-![A strip of SING.Pocket screens](.github/readme/strip.png)
+![alt text](.github/readme/nanaya.png)
+
+
 
 ## How to run it
 
@@ -85,6 +91,8 @@ The reference melody is estimated from the full mix: the centre of the stereo im
 ### About YouTube
 
 The app does not download from YouTube. Downloading is against YouTube's terms of service, and its embedded player doesn't let other apps change the pitch. Use songs you have as files.
+
+Why is this in the readme? Well, me and the model, we had a long token consuming talk about pros and cons. He won, so BYOM.
 
 ### Your songs and takes
 
@@ -127,3 +135,10 @@ Have fun.
 ### Third-party code
 
 The banner, app icons and favicons are lettered in [Inter](https://rsms.me/inter/) (SIL Open Font License 1.1), converted to shapes, so no font file is included. The app itself has no third-party code.
+
+## The readmes
+
+Yeah. They are all similar. I copied and pasted. No one ever reads them all. Kilroy was here.
+
+
+Anyway, listen to me: You matter. A lot. I don't know you stranger, but you have my admiration and love. Keep making art.
