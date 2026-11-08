@@ -6,3 +6,7 @@ android/out/
 *.apk
 *.aab
 .DS_Store
+
+# signing keys never go in the repository
+*.jks
+*.keystore
