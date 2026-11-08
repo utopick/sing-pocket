@@ -16,6 +16,8 @@ There is a help wiki inside (también en español), with small interactive demos
 
 ![SING.Pocket on five screens, each in a different theme](.github/readme/hero.png)
 
+<p align="center"><img src=".github/readme/demo.gif" width="320" alt="SING.Pocket in use: a warm-up following the voice, a flight of the plane, the sampler and live autotune"></p>
+
 ## Why did I release these apps? 
 
 Because GitHub allows me to host them in a GitHub site if I make them public, and I don't want to host them myself. 
