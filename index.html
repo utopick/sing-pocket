@@ -7,15 +7,19 @@
 
   Layout of this file
     <head>    theme bootstrap (reads localStorage before first paint), <style>
-    <body>    backdrop canvas, header, one <section> per view (warm, song, takes), lyrics sheet, help + welcome, toast
+    <body>    backdrop canvas, header, one <section> per view (warm, song, range, at, vox, game, prog, takes), lyrics sheet,
+              help + welcome, toast
     <script>  helpers, storage (IndexedDB), audio + mic + pitch detection, recording, warm-ups, song engine
-              (WSOLA time stretch, reference melody, lyrics), takes, views, backdrop, help, boot
+              (WSOLA time stretch, reference melody, lyrics), takes, autotune, views, the tabs (range finder, autotune,
+              vox sampler, plane game, history), backdrop, help, boot
 
   Storage
     localStorage  sing.theme, sing.lang, sing.welcome, sing.state { view, voice, ex, bpm, updown, listen, key,
-                  tempo, octFree, backing, notes, song }
+                  tempo, octFree, backing, notes, song, at, range, ranges, kar, vx, game, gameBest }
+                  sing.log      the practice history [{ d, k, s, sc, n }]
     IndexedDB     "sing-pocket": songs { id, name, artist, title, blob, lyrics, lyrOff, ref, refHop, guide }
                                  takes { id, kind, name, date, blob, mime, dur, song, key, tempo, pitch, score, segs }
+                                 vox   { i (pad), name, rate, raw, data, fx, pitch, vol, loop }
 -->
 <html lang="en">
   <head>
@@ -941,10 +945,162 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
       .pgSong circle {
         fill: var(--acc);
       }
-      #hAt.on {
+      /* the autotune view button glows while live autotune is on, whatever view you are in */
+      #hViews [data-v="at"].live:not(.on) {
         background: var(--acc2);
         border-color: var(--acc2);
         color: var(--ink2);
+      }
+      #rgLane {
+        min-height: 170px;
+      }
+      #range .rgStep,
+      #range .rgNote,
+      #range .rgRes {
+        flex: none;
+      }
+      #atLane {
+        min-height: 150px;
+      }
+      #at .hint {
+        flex: none;
+        padding: 0 4px;
+        min-height: 2.6em;
+      }
+      #gLane {
+        min-height: 200px;
+      }
+      /* the chart takes whatever height is left, so the lists sit at the bottom */
+      #prog .card {
+        flex: 1;
+        margin: 0;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+      }
+      #prog .card > * {
+        flex: none;
+      }
+      #prog .card > .pgChart {
+        flex: 1 1 0;
+        min-height: 130px;
+        position: relative;
+      }
+      #prog .pgChart svg {
+        position: absolute;
+        inset: 0;
+        height: 100%;
+      }
+      /* vox: 16 pads, the FX pads and the edit tools swap in the middle (as in TUNE's looper) */
+      #vxPads,
+      #vxFx {
+        grid-template-columns: repeat(4, 1fr);
+        grid-auto-rows: 1fr;
+        flex: 1;
+        min-height: 0;
+      }
+      #vxFxP {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-height: 0;
+      }
+      #vxFxP[hidden] {
+        display: none;
+      }
+      #vxFx.busy {
+        opacity: 0.6;
+      }
+      #vxPads .sq,
+      #vxFx .sq {
+        min-height: 0;
+        cursor: pointer;
+        touch-action: manipulation;
+      }
+      #vxPads .sq svg.wv {
+        position: absolute;
+        inset: 18% 4px 22%;
+        width: calc(100% - 8px);
+        height: 60%;
+        pointer-events: none;
+        opacity: 0.55;
+      }
+      #vxPads .sq svg.wv path {
+        fill: rgb(var(--ccrgb));
+      }
+      #vxPads .sq.play svg.wv path {
+        fill: var(--chink, #06100a);
+        opacity: 0.35;
+      }
+      #vxPads .sq .nt,
+      #vxPads .sq .in {
+        position: relative;
+      }
+      #vxPads .sq.empty {
+        opacity: 0.55;
+      }
+      #vxPads .sq.empty .nt {
+        font-size: 22px;
+      }
+      #vxPads .sq.rec {
+        background: color-mix(in srgb, var(--hot) 70%, transparent);
+        border-color: var(--hot);
+        color: #fff;
+        opacity: 1;
+        border-style: solid;
+      }
+      #vxPads .sq.count {
+        border-color: var(--hot);
+        color: var(--hot);
+        opacity: 1;
+        border-style: solid;
+      }
+      #vxPads .sq.count .nt {
+        font-size: 34px;
+      }
+      #vxPads .sq > i {
+        height: 5px;
+      }
+      #vxPads .sq.rec > i {
+        background: #fff;
+      }
+      #vxFx .sq.ok {
+        background: rgb(var(--ccrgb));
+        color: var(--chink, #06100a);
+        border-color: rgb(var(--ccrgb));
+        box-shadow: 0 0 16px -2px rgb(var(--ccrgb));
+      }
+      #vxFx .sq.ok .in {
+        color: var(--chink, #06100a);
+      }
+      #vxEdit {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        flex: none;
+      }
+      #vxEdit[hidden] {
+        display: none;
+      }
+      #vxWave {
+        touch-action: none;
+        cursor: col-resize;
+        height: 64px;
+        width: 100%;
+        border-radius: 6px;
+        background: var(--wave);
+        border: 1px solid var(--line);
+      }
+      #vxEdit .prow > button,
+      #vox > .prow:first-child > button {
+        font-size: 11px;
+      }
+      #vox > .prow:first-child > button {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
       }
       #atStyle button {
         display: flex;
@@ -1231,12 +1387,19 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         <button data-v="warm" class="on" title="Warm-ups">
           <svg class="ic" viewBox="0 0 24 24"><path d="M12 3c3 4 5 6 5 10a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-5 1-9z" /></svg></button
         ><button data-v="song" title="Song practice">
-          <svg class="ic" viewBox="0 0 24 24"><path d="M9 18V5l11-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="17" cy="16" r="3" /></svg>
+          <svg class="ic" viewBox="0 0 24 24"><path d="M9 18V5l11-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="17" cy="16" r="3" /></svg></button
+        ><button data-v="range" title="Range finder">
+          <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v18M8 7l4-4 4 4M8 17l4 4 4-4" /><path d="M4 12h3M17 12h3" /></svg></button
+        ><button data-v="at" title="Autotune: live, and tuned copies of recordings">
+          <svg class="ic" viewBox="0 0 24 24"><path d="M3 17h4v-4h4V9h4v4h6" /><circle cx="19" cy="6" r="2" /></svg></button
+        ><button data-v="vox" title="Vox: vocal samples">
+          <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5" /><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5" /><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5" /><circle cx="17.25" cy="17.25" r="3.4" /></svg></button
+        ><button data-v="game" title="Plane: a singing game">
+          <svg class="ic" viewBox="0 0 24 24"><path d="M3 11l18-7-6 17-3-7z" /><path d="M12 14l9-10" /></svg></button
+        ><button data-v="prog" title="History: your practice over time">
+          <svg class="ic" viewBox="0 0 24 24"><path d="M3 20h18" /><path d="M6 16v-4M11 16V7M16 16v-6M21 16V4" /></svg>
         </button>
       </div>
-      <button id="hAt" title="Autotune: live, and tuned copies of recordings">
-        <svg class="ic" viewBox="0 0 24 24"><path d="M3 17h4v-4h4V9h4v4h6" /><circle cx="19" cy="6" r="2" /></svg>
-      </button>
       <button id="rec" class="rec" title="Record a take">●</button>
       <button id="play" class="big" title="Play / stop">▶</button>
       <!-- a view button like the ones in #hViews, kept apart so it can sit last in the header -->
@@ -1303,6 +1466,93 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         <input type="file" id="lrcFile" accept=".lrc,.txt,text/plain" hidden />
       </section>
 
+      <!-- RANGE: measure the lowest and highest comfortable note; the chart puts it beside every voice type -->
+      <section id="range">
+        <div class="prow">
+          <div class="dd inf"><span id="rgNow"></span></div>
+          <label class="dd" style="flex: 1.4"><span id="rgVoiceTxt"></span><select id="rgVoice" title="Voice type in use"></select></label>
+        </div>
+        <div class="lane" id="rgLane"><canvas id="rgCv"></canvas></div>
+        <div class="rgStep" id="rgStep"></div>
+        <div class="rgNote"><b id="rgNote">—</b><i><b id="rgBar"></b></i></div>
+        <div class="rgRes" id="rgRes"></div>
+        <div class="prow rib">
+          <button id="rgGo"></button><button id="rgMine"></button><button id="rgType"></button><button id="rgWarm"></button><button id="rgGame"></button>
+        </div>
+      </section>
+
+      <!-- AUTOTUNE: the key and style, LIVE through headphones with its trace, and tuned copies of recordings -->
+      <section id="at">
+        <div class="prow">
+          <label class="dd" style="flex: 1.3"><span id="atKeyTxt"></span><select id="atKey" title="The notes the voice is pulled to"></select></label>
+          <label class="knob"><i>MONITOR</i><b id="atMonTxt"></b><input id="atMon" type="range" min="0" max="1.5" step="0.01" value="1" /></label>
+        </div>
+        <div class="lane" id="atLane">
+          <canvas id="atCv"></canvas>
+          <div class="hud"><div class="n" id="atNote">—</div><div class="c" id="atCents"></div></div>
+        </div>
+        <div class="prow">
+          <label class="dd"><span id="atTakeTxt"></span><select id="atTakeSel" title="A recording to tune"></select></label>
+        </div>
+        <div class="hint" id="atInfo"></div>
+        <div class="prow rib"><button id="atLive"></button><button id="atNat"></button><button id="atHard"></button><button id="atGo"></button></div>
+      </section>
+
+      <!-- VOX: 16 pads of your voice; FX pads and the edit tools swap in like in TRACK's sampler and TUNE's looper -->
+      <section id="vox">
+        <div class="prow">
+          <div class="dd inf" style="flex: 2"><span id="vxInfo"></span></div>
+          <button id="vxCount"></button><button id="vxLoopB"></button>
+        </div>
+        <div class="pads" id="vxPads"></div>
+        <div class="jp" id="vxFxP" hidden><div class="pads" id="vxFx"></div></div>
+        <div id="vxEdit" hidden>
+          <canvas id="vxWave"></canvas>
+          <div class="prow">
+            <label class="knob"><i>VOLUME</i><b id="vxVolTxt"></b><input id="vxVol" type="range" min="0" max="1.5" step="0.01" value="1" /></label>
+            <label class="knob"><i>PITCH</i><b id="vxPitchTxt"></b><input id="vxPitch" type="range" min="-12" max="12" step="1" value="0" /></label>
+          </div>
+          <div class="prow">
+            <button id="vxOver">OVERDUB<i>ADD LAYER</i></button><button id="vxCrop"></button><button id="vxRev">REVERSE<i>FLIP</i></button
+            ><button id="vxNorm">NORM.<i>TO 0 dB</i></button><button id="vxSave">SAVE<i>TO FILES</i></button><button id="vxClr">CLEAR<i>THIS</i></button>
+          </div>
+        </div>
+        <div class="prow rib">
+          <button id="vxPlay"></button><button id="vxRec" class="rec"></button><button id="vxFxB"></button><button id="vxEditB"></button><button id="vxUndo"></button>
+        </div>
+      </section>
+
+      <!-- PLANE: sing the notes of the hoops; a warm-up exercise as a game -->
+      <section id="game">
+        <div class="prow">
+          <label class="dd"><span id="gLvlTxt"></span><select id="gLvl" title="Level"></select></label>
+          <label class="dd" style="flex: 1.5"><span id="gExTxt"></span><select id="gEx" title="The exercise the hoops follow"></select></label>
+          <div class="dd inf" style="flex: 0.8"><span id="gBest"></span></div>
+        </div>
+        <div class="lane" id="gLane"><canvas id="gCv"></canvas></div>
+        <div class="prow rib"><button id="gPlay"></button><button id="gCue"></button><button id="gRange"></button></div>
+      </section>
+
+      <!-- HISTORY: practice over time -->
+      <section id="prog">
+        <div class="card list">
+          <div class="pgTop" id="pgTop"></div>
+          <div class="pgChart" id="pgChart"></div>
+          <div id="pgWarm"></div>
+          <h3 style="margin-top: 12px">Songs</h3>
+          <div id="pgSongs"></div>
+          <h3 style="margin-top: 12px">Plane</h3>
+          <div id="pgGame"></div>
+          <h3 style="margin-top: 12px">Range</h3>
+          <div id="pgRange"></div>
+          <div class="hint" style="margin-top: 8px">
+            Every warm-up, sing-along, recording and flight counts, kept on this phone. Deleting a recording keeps its
+            place in the history.
+          </div>
+          <div class="row" style="margin-top: 6px"><button id="pgClear" style="flex: 1">CLEAR THE HISTORY</button></div>
+        </div>
+      </section>
+
       <!-- TAKES: songs and recordings take the screen; the bottom bar opens one panel at a time -->
       <section id="takes">
         <div class="card" id="recCard" hidden>
@@ -1344,19 +1594,6 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
             men singing a woman's song, and the other way round).
           </div>
         </div>
-        <div class="card fpanel" data-fp="prog" hidden>
-          <h3>Progress</h3>
-          <div class="pgTop" id="pgTop"></div>
-          <div class="pgChart" id="pgChart"></div>
-          <div id="pgWarm"></div>
-          <h3 style="margin-top: 12px">Songs</h3>
-          <div id="pgSongs"></div>
-          <div class="hint" style="margin-top: 8px">
-            Every warm-up, sing-along and recording counts, kept on this phone. Deleting a recording keeps its place in
-            the history.
-          </div>
-          <div class="row" style="margin-top: 6px"><button id="pgClear" style="flex: 1">CLEAR THE HISTORY</button></div>
-        </div>
         <div class="card fpanel" data-fp="theme" hidden>
           <h3>Theme</h3>
           <div id="themeBar">
@@ -1368,7 +1605,6 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
           <button data-fpb="files"><i>IMPORT</i>FILES</button>
           <button data-fpb="theme"><i>LOOK</i>THEME</button>
           <button data-fpb="opts"><i>SETTINGS</i>OPTIONS</button>
-          <button data-fpb="prog"><i>HISTORY</i>PROGRESS</button>
           <button id="helpBtn"><i>MANUAL</i>HELP</button>
         </div>
       </section>
@@ -1399,43 +1635,6 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         <h3 style="margin-top: 10px">Or paste them</h3>
         <div class="row"><textarea id="lyText" placeholder="Plain text, or LRC lines like [00:12.30] First line"></textarea></div>
         <div class="row"><button id="lyClear" style="flex: 1">REMOVE</button><button id="lySave" class="on" style="flex: 2">USE THESE LYRICS</button></div>
-      </div>
-    </div>
-    <!-- autotune: the key and style, LIVE through headphones, and tuned copies of recordings -->
-    <div id="atSheet" class="sheetBg" hidden>
-      <div class="card" role="dialog" aria-modal="true">
-        <div class="row"><h3 style="flex: 1; margin: 0">Autotune</h3><button id="atClose">✕</button></div>
-        <div class="row">
-          <label class="dd" style="flex: 1; height: 46px"><span id="atKeyTxt"></span><select id="atKey" title="The notes the voice is pulled to"></select></label>
-        </div>
-        <div class="row" id="atStyle">
-          <button data-st="nat" style="flex: 1">NATURAL<i>KEEPS YOUR VIBRATO</i></button
-          ><button data-st="hard" style="flex: 1">HARD<i>THE ROBOT EFFECT</i></button>
-        </div>
-        <h3 style="margin-top: 10px">Live</h3>
-        <div class="row"><button id="atLive" style="flex: 1"></button></div>
-        <label class="knob" style="margin: 4px 0"
-          ><i>MONITOR</i><b id="atMonTxt"></b><input id="atMon" type="range" min="0" max="1.5" step="0.01" value="1"
-        /></label>
-        <div class="hint">
-          Use headphones: you hear your tuned voice about 40 ms late (wired is best; Bluetooth adds its own delay).
-          Through the speaker it would howl. While LIVE is on, recordings keep the tuned voice.
-        </div>
-        <div id="atTake" hidden>
-          <h3 style="margin-top: 12px">This recording</h3>
-          <div class="hint" id="atTakeTxt"></div>
-          <div class="row"><button id="atGo" class="on" style="flex: 1">MAKE A TUNED COPY</button></div>
-        </div>
-      </div>
-    </div>
-    <!-- range finder: the lowest and the highest comfortable note, held; then the voice type that fits -->
-    <div id="rgSheet" class="sheetBg" hidden>
-      <div class="card" role="dialog" aria-modal="true">
-        <div class="row"><h3 style="flex: 1; margin: 0">Your range</h3><button id="rgClose">✕</button></div>
-        <div class="rgStep" id="rgStep"></div>
-        <div class="rgNote"><b id="rgNote">—</b><i><b id="rgBar"></b></i></div>
-        <div class="rgRes" id="rgRes"></div>
-        <div class="row" id="rgBtns"></div>
       </div>
     </div>
     <!-- vocal reference: what it is, pick a file, or go back to the song's own melody -->
@@ -1567,23 +1766,28 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         at: { key: "-1", style: "nat", mon: 1 }, // autotune: key ("-1" every note, "0".."11" major, "m0".."m11" minor)
         range: null, // [low, high] MIDI from the range finder
         kar: false, // karaoke: the song's centre (the voice) taken out
+        ranges: [], // the range measures, [{ d, lo, hi }], the last 12
+        vx: { count: true }, // vox: a count-in before recording
+        game: { lvl: "easy", ex: "five", cue: true }, // plane: level, the exercise the hoops follow, piano cue
+        gameBest: {}, // plane: best score per level
       };
       try {
         Object.assign(S, JSON.parse(localStorage.getItem("sing.state") || "{}"));
       } catch {}
       function saveState() {
         try {
-          const { view, voice, ex, bpm, updown, listen, key, tempo, octFree, backing, notes, song, at, range, kar } = S;
-          localStorage.setItem("sing.state", JSON.stringify({ view, voice, ex, bpm, updown, listen, key, tempo, octFree, backing, notes, song, at, range, kar }));
+          const { view, voice, ex, bpm, updown, listen, key, tempo, octFree, backing, notes, song, at, range, kar, ranges, vx, game, gameBest } = S;
+          localStorage.setItem("sing.state", JSON.stringify({ view, voice, ex, bpm, updown, listen, key, tempo, octFree, backing, notes, song, at, range, kar, ranges, vx, game, gameBest }));
         } catch {}
       }
       let dbP;
       function db() {
         return (dbP ||= new Promise((ok, bad) => {
-          const r = indexedDB.open("sing-pocket", 1);
+          const r = indexedDB.open("sing-pocket", 2);
           r.onupgradeneeded = () => {
-            r.result.createObjectStore("songs", { keyPath: "id" });
-            r.result.createObjectStore("takes", { keyPath: "id" });
+            const d = r.result;
+            for (const st of ["songs", "takes"]) if (!d.objectStoreNames.contains(st)) d.createObjectStore(st, { keyPath: "id" });
+            if (!d.objectStoreNames.contains("vox")) d.createObjectStore("vox", { keyPath: "i" }); // version 2: the vox pads
           };
           r.onsuccess = () => ok(r.result);
           r.onerror = () => bad(r.error);
@@ -1928,13 +2132,13 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         try {
           localStorage.setItem("sing.log", JSON.stringify(LOG));
         } catch {}
-        if (fpOpen === "prog") renderProg();
+        if (S.view === "prog") renderProg();
       }
       const dayKey = (t) => {
         const d = new Date(t);
         return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
       };
-      function renderProg() {
+      function renderProg(again) {
         const DAY = 86400000,
           now = Date.now(),
           today = new Date(new Date().toDateString()).getTime(),
@@ -1960,7 +2164,8 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
           }),
           top = Math.max(10, ...mins),
           W = 280,
-          H = 86,
+          box = $("#pgChart").getBoundingClientRect(),
+          H = box.width > 0 ? Math.max(70, Math.round((W * box.height) / box.width) - 14) : 86,
           bw = W / 14;
         $("#pgChart").innerHTML =
           `<svg viewBox="0 0 ${W} ${H + 14}">` +
@@ -1998,6 +2203,10 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
               );
             })
             .join("") || '<div class="hint">Record a take over a song (● in the Song view) to follow its score here.</div>';
+        progExtra();
+        // the lists below decide how tall the chart can be: draw it once more at its final size
+        const b2 = $("#pgChart").getBoundingClientRect();
+        if (!again && b2.width > 0 && Math.abs(Math.round((W * b2.height) / b2.width) - 14 - H) > 2) renderProg(true);
       }
       function recFace() {
         $("#rec").classList.toggle("on", REC.on);
@@ -3290,7 +3499,9 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
                 ? "warm-up"
                 : t.kind === "import"
                   ? "imported"
-                  : "free session",
+                  : t.kind === "vox"
+                    ? "vocal sample"
+                    : "free session",
           size = (t) => (!t.blob ? "" : t.blob.size < 1048576 ? " · " + Math.max(1, Math.round(t.blob.size / 1024)) + " KB" : " · " + (t.blob.size / 1048576).toFixed(1) + " MB");
         $("#list").innerHTML =
           `<div class="grp">SONGS</div>` +
@@ -3536,42 +3747,6 @@ registerProcessor("autotune", AutoTune);
         atFace();
         if (!W.on && !REC.on && S.view !== "song") micStop();
       }
-      function atFace() {
-        $("#hAt").classList.toggle("on", AT.live);
-        $("#atLive").textContent = "LIVE AUTOTUNE: " + (AT.live ? "ON" : "OFF");
-        $("#atLive").classList.toggle("on", AT.live);
-        $$("#atStyle [data-st]").forEach((b) => b.classList.toggle("on", b.dataset.st === S.at.style));
-        const sel = $("#atKey");
-        if (!sel.options.length) {
-          const nm = (pc) => noteName(60 + pc).replace(/-?\d+$/, "");
-          sel.innerHTML =
-            `<option value="-1">Every note (chromatic)</option>` +
-            Array.from({ length: 12 }, (_, i) => `<option value="${i}">${nm(i)} major</option><option value="m${i}">${nm(i)} minor</option>`).join("");
-        }
-        sel.value = S.at.key;
-        $("#atKeyTxt").innerHTML = `<i>NOTES</i>${esc(sel.selectedOptions[0] ? sel.selectedOptions[0].text : "")}`;
-        $("#atMon").value = S.at.mon;
-        $("#atMonTxt").textContent = Math.round(S.at.mon * 100) + "%";
-      }
-      function atSet() {
-        if (AT.node) AT.node.port.postMessage(atParams());
-        atFace();
-        saveState();
-      }
-      async function atOpen(takeId) {
-        AT.take = takeId || null;
-        $("#atTake").hidden = !takeId;
-        if (takeId) {
-          const t = await dbGet("takes", takeId);
-          $("#atTakeTxt").textContent = `“${t.name}”: a tuned copy is added to the list; the original stays.${
-            t.stems ? " The backing is mixed back in after tuning the voice." : t.kind === "song" || t.kind === "warm" ? " If this take has the backing mixed in, tuning will struggle: takes recorded from now on keep the voice apart." : ""
-          }`;
-          $("#atGo").textContent = "MAKE A TUNED COPY";
-        }
-        S.at.key = String(S.at.key);
-        atFace();
-        $("#atSheet").hidden = false;
-      }
       // a tuned copy of a recording: the voice through the same processor in an offline context
       async function atRender(t) {
         const c = await getCtx(),
@@ -3613,42 +3788,6 @@ registerProcessor("autotune", AutoTune);
         }
         return { blob, dur: n / sr };
       }
-      $("#hAt").onclick = () => atOpen(null);
-      $("#atClose").onclick = () => ($("#atSheet").hidden = true);
-      $("#atSheet").onclick = (e) => e.target.id === "atSheet" && ($("#atSheet").hidden = true);
-      $("#atKey").onchange = (e) => ((S.at.key = e.target.value), atSet());
-      $("#atStyle").onclick = (e) => {
-        const b = e.target.closest("[data-st]");
-        if (b) (S.at.style = b.dataset.st), atSet();
-      };
-      $("#atMon").oninput = (e) => {
-        S.at.mon = +e.target.value;
-        if (AT.mon) AT.mon.gain.value = S.at.mon;
-        atFace();
-      };
-      $("#atMon").onchange = saveState;
-      $("#atLive").onclick = async () => {
-        if (AT.live) return atLiveOff();
-        if (await atLiveOn()) toast("Live autotune on: use headphones");
-      };
-      $("#atGo").onclick = async () => {
-        if (AT.busy || !AT.take) return;
-        AT.busy = true;
-        $("#atGo").textContent = "TUNING…";
-        try {
-          const t = await dbGet("takes", AT.take),
-            { blob, dur } = await atRender(t),
-            copy = Object.assign({}, t, { id: newId(), date: Date.now(), blob, mime: blob.type, dur, stems: null, pcm: null, score: null, pitch: [], tuned: true, name: (t.name + " · tuned").slice(0, 80) });
-          await dbPut("takes", copy);
-          $("#atSheet").hidden = true;
-          renderList();
-          toast("Tuned copy added: ▶ to hear it");
-        } catch (err) {
-          toast("Could not tune this recording" + (err && err.message ? ": " + err.message : ""), 3000);
-          $("#atGo").textContent = "MAKE A TUNED COPY";
-        }
-        AT.busy = false;
-      };
       // free session: ● in this view
       function sessionFrame() {
         if (!(REC.on && REC.kind === "session")) return;
@@ -3711,7 +3850,6 @@ registerProcessor("autotune", AutoTune);
       let fpOpen = null;
       function filePanel(k) {
         fpOpen = fpOpen === k ? null : k;
-        if (fpOpen === "prog") renderProg();
         $$("#takes .fpanel").forEach((p) => (p.hidden = p.dataset.fp !== fpOpen));
         $$("#tTabs [data-fpb]").forEach((b) => b.classList.toggle("on", b.dataset.fpb === fpOpen));
       }
@@ -3723,9 +3861,10 @@ registerProcessor("autotune", AutoTune);
       // ======================================================================
       // views, header, ribbons, the frame loop
       // ======================================================================
-      const WM = { warm: "WARM-UP", song: "SONG", takes: "FILES" };
+      const WM = { warm: "WARM-UP", song: "SONG", range: "RANGE", at: "AUTOTUNE", vox: "VOX", game: "PLANE", prog: "HISTORY", takes: "FILES" };
       function showView(v) {
         if (!WM[v]) v = "warm";
+        const prev = S.view;
         if (v !== S.view) {
           if (W.on) warmStop();
           if (REC.on && REC.kind === "session") recStop();
@@ -3736,6 +3875,7 @@ registerProcessor("autotune", AutoTune);
         $("#wm").textContent = WM[v];
         wmFit();
         if (v === "takes") renderList();
+        tabsShow(v, prev);
         playFace();
         saveState();
         loop();
@@ -3748,6 +3888,7 @@ registerProcessor("autotune", AutoTune);
         if (r < 1) w.style.fontSize = parseFloat(getComputedStyle(w).fontSize) * r + "px";
       }
       addEventListener("resize", wmFit);
+      addEventListener("resize", () => S.view === "prog" && renderProg());
       // header ●: a take of what this view does; ▶: play / stop what this view plays
       $("#rec").onclick = async () => {
         if (REC.on) {
@@ -3758,6 +3899,7 @@ registerProcessor("autotune", AutoTune);
           return toast("Session saved in Files");
         }
         if (S.view === "song") return takeStart();
+        if (S.view === "vox") return vxRecBtn();
         if (S.view === "warm") {
           S.listen = true;
           if (!W.on) await warmStart();
@@ -3771,13 +3913,14 @@ registerProcessor("autotune", AutoTune);
         }
       };
       $("#play").onclick = () => {
+        if (tabPlay()) return;
         if (S.view === "song") return P.on ? songStop() : songPlay();
         if (S.view === "warm") return W.on ? warmStop() : warmStart();
         if (TP.id) return takeStopPlay();
         dbAll("takes").then((t) => t.length && takePlay(t.sort((a, b) => b.date - a.date)[0].id));
       };
       function playFace() {
-        const on = S.view === "song" ? P.on : S.view === "warm" ? W.on : !!TP.id;
+        const on = S.view === "song" ? P.on : S.view === "warm" ? W.on : (tabOn(S.view) ?? !!TP.id);
         $("#play").classList.toggle("on", on);
         $("#play").textContent = on ? "■" : "▶";
         ribFace();
@@ -3829,104 +3972,6 @@ registerProcessor("autotune", AutoTune);
         saveState();
         if (S.kar) toast("Karaoke: the voice in the centre of the mix is taken out (works on most studio songs)", 2600);
       };
-      // ---- range finder: hold the lowest comfortable note, then the highest
-      const RG = { step: 0, lo: 0, hi: 0, iv: 0, run: [], anchor: NaN };
-      async function rangeOpen() {
-        warmStop();
-        songStop();
-        RG.step = 0;
-        RG.run = [];
-        rangeFace();
-        $("#rgSheet").hidden = false;
-        if (!(await micStart())) return rangeClose();
-        clearInterval(RG.iv);
-        RG.iv = setInterval(rangeTick, 50);
-      }
-      function rangeClose() {
-        clearInterval(RG.iv);
-        $("#rgSheet").hidden = true;
-        if (!W.on && !P.on) micStop();
-      }
-      const HOLD = 30; // frames of 50 ms: hold a note 1.5 s
-      function rangeTick() {
-        if (RG.step > 1) return;
-        const { m } = voiceNow();
-        if (m !== m) {
-          RG.run = [];
-          $("#rgNote").textContent = "—";
-          $("#rgBar").style.width = "0";
-          return;
-        }
-        $("#rgNote").textContent = noteName(m);
-        if (!RG.run.length || Math.abs(m - RG.anchor) > 0.8) (RG.run = []), (RG.anchor = m);
-        RG.run.push(m);
-        $("#rgBar").style.width = Math.min(100, (RG.run.length / HOLD) * 100) + "%";
-        if (RG.run.length < HOLD) return;
-        const xs = RG.run.slice().sort((a, b) => a - b),
-          note = Math.round(xs[xs.length >> 1]);
-        RG.run = [];
-        if (RG.step === 0) {
-          RG.lo = note;
-          RG.step = 1;
-        } else if (note < RG.lo + 7) {
-          toast(`${noteName(note)} is not much higher than ${noteName(RG.lo)}: go higher (no strain)`, 2400);
-          return;
-        } else {
-          RG.hi = note;
-          RG.step = 2;
-          clearInterval(RG.iv);
-          if (!W.on && !P.on) micStop();
-        }
-        rangeFace();
-      }
-      // the built-in voice type nearest to the range found
-      function rangeType(lo, hi) {
-        return VOICE_TYPES.map((k) => [k, Math.abs(VOICES[k][1] - lo) + Math.abs(VOICES[k][2] - hi)]).sort((a, b) => a[1] - b[1])[0][0];
-      }
-      function rangeFace() {
-        const st = $("#rgStep");
-        $("#rgRes").innerHTML = "";
-        $("#rgBar").style.width = "0";
-        if (RG.step < 2) {
-          $("#rgNote").textContent = "—";
-          st.innerHTML =
-            RG.step === 0
-              ? `<b>1 · Your lowest note.</b> Sing an easy “ah” on the lowest note you can sing comfortably, and hold it until the bar fills.<small>Comfortable: not a growl, not a whisper.</small>`
-              : `<b>2 · Your highest note.</b> Low note: <b>${noteName(RG.lo)}</b>. Now slide up to the highest note you can sing comfortably and hold it.<small>No straining and no squeak: the top note you could sing in a song.</small>`;
-          $("#rgBtns").innerHTML = RG.step === 1 ? '<button data-rg="again" style="flex:1">START AGAIN</button>' : "";
-          return;
-        }
-        const lo = RG.lo,
-          hi = RG.hi,
-          span = hi - lo,
-          k = rangeType(lo, hi),
-          [vn, vlo, vhi] = VOICES[k];
-        st.innerHTML = "<b>Done.</b>";
-        $("#rgNote").textContent = noteName(lo) + "–" + noteName(hi);
-        $("#rgRes").innerHTML =
-          `Your comfortable range is <b>${Math.floor(span / 12)} octave${Math.floor(span / 12) === 1 ? "" : "s"}${span % 12 ? " and " + (span % 12) + " semitone" + (span % 12 === 1 ? "" : "s") : ""}</b>. ` +
-          `The nearest voice type is <b>${vn}</b> (${noteName(vlo)}–${noteName(vhi)}).<br>` +
-          `<span class="hint">USE MY RANGE fits the warm-ups to exactly your notes. Ranges grow with practice: measure it again in a few weeks.</span>`;
-        $("#rgBtns").innerHTML = `<button data-rg="mine" class="on" style="flex:2">USE MY RANGE</button><button data-rg="type" data-k="${k}" style="flex:2">USE ${vn.toUpperCase()}</button><button data-rg="again" style="flex:1">AGAIN</button>`;
-      }
-      $("#rgBtns").onclick = (e) => {
-        const b = e.target.closest("[data-rg]");
-        if (!b) return;
-        if (b.dataset.rg === "again") return rangeOpen();
-        if (b.dataset.rg === "mine") {
-          S.range = [RG.lo, RG.hi];
-          S.voice = "mine";
-        } else S.voice = b.dataset.k;
-        rangeVoice();
-        saveState();
-        renderWarm();
-        ribFace();
-        rangeClose();
-        toast("Voice: " + VOICES[S.voice][0] + " " + noteName(VOICES[S.voice][1]) + "–" + noteName(VOICES[S.voice][2]));
-      };
-      $("#wRange").onclick = rangeOpen;
-      $("#rgClose").onclick = rangeClose;
-      $("#rgSheet").onclick = (e) => e.target.id === "rgSheet" && rangeClose();
       $("#pgClear").onclick = (e) => {
         const b = e.currentTarget;
         if (!b.classList.contains("arm")) {
@@ -4016,8 +4061,8 @@ registerProcessor("autotune", AutoTune);
           raf = 0;
           if (S.view === "warm") warmFrame();
           else if (S.view === "song") songFrame();
-          else sessionFrame();
-          if (W.on || P.on || REC.on || (S.view === "warm" && MIC.on)) raf = requestAnimationFrame(f);
+          else if (!tabFrame()) sessionFrame();
+          if (W.on || P.on || REC.on || (S.view === "warm" && MIC.on) || tabBusy()) raf = requestAnimationFrame(f);
         };
         raf = requestAnimationFrame(f);
       }
@@ -4032,6 +4077,7 @@ registerProcessor("autotune", AutoTune);
         if (REC.on && REC.kind === "session") recStop();
         warmStop();
         songStop();
+        tabsStop();
         micStop();
       });
       function setTheme(t, save) {
@@ -4391,10 +4437,10 @@ registerProcessor("autotune", AutoTune);
               "**SING.Pocket** is a pocket vocal coach: warm-ups that follow your voice, song practice with key and speed change, A-B loops, lyrics, and a pitch test that shows where you were in tune and where you were not. The sister app of TRACK.Pocket and TUNE.Pocket. Everything runs on this phone; the only time it goes online is when you search for lyrics.",
               "## The header",
               "- **SING.** opens this manual.",
-              "- The view buttons: **Warm-up**, **Song**, and **Files** (the disk) at the far right.",
-              "- **●** records what the view does: the warm-up, you singing along with the song, or a free session in Files. Tap it again to stop and keep the recording, compressed, in Files.",
-              "- **▶** plays and stops what the view plays.",
-              "- The **steps** button opens **Autotune** (it glows while live autotune is on).",
+              "- The view buttons: **Warm-up**, **Song**, **Range**, **Autotune**, **Vox** (your vocal samples), **Plane** (the singing game), **History**, and **Files** (the disk) at the far right.",
+              "- **●** records what the view does: the warm-up, you singing along with the song, a new sample in Vox, or a free session anywhere else. Tap it again to stop and keep the recording, compressed, in Files.",
+              "- **▶** plays and stops what the view plays: the warm-up, the song, live autotune, every Vox pad, a flight of the plane, or the measure in Range.",
+              "- The **Autotune** button (the steps) glows while live autotune is on, whatever view you are in.",
               "## Microphone and headphones",
               "The first time the app listens, the phone asks for permission to use the microphone. In the Android app, if you refused it, allow it in *Settings → Apps → SING.Pocket → Permissions → Microphone*.",
               "**Use headphones** when you sing along with a song: otherwise the microphone hears the song too, and the pitch test mixes it up with your voice.",
@@ -4403,10 +4449,10 @@ registerProcessor("autotune", AutoTune);
               "**SING.Pocket** es un entrenador vocal de bolsillo: calentamientos que siguen tu voz, práctica de canciones cambiando tono y velocidad, bucles A-B, letras y una prueba de afinación que muestra dónde afinaste y dónde no. La app hermana de TRACK.Pocket y TUNE.Pocket. Todo funciona en el teléfono; solo se conecta a internet cuando buscas una letra.",
               "## La cabecera",
               "- **SING.** abre este manual.",
-              "- Los botones de vista: **Calentamiento**, **Canción**, y **Archivos** (el disco) a la derecha del todo.",
-              "- **●** graba lo que hace la vista: el calentamiento, tú cantando con la canción, o una sesión libre en Archivos. Tócalo otra vez para parar y guardar la grabación, comprimida, en Archivos.",
-              "- **▶** reproduce y para lo que suena en la vista.",
-              "- El botón de los **escalones** abre el **Autotune** (brilla mientras el autotune en directo está activo).",
+              "- Los botones de vista: **Calentamiento**, **Canción**, **Rango**, **Autotune**, **Vox** (tus muestras de voz), **Avión** (el juego de cantar), **Historial**, y **Archivos** (el disco) a la derecha del todo.",
+              "- **●** graba lo que hace la vista: el calentamiento, tú cantando con la canción, una muestra nueva en Vox, o una sesión libre en las demás. Tócalo otra vez para parar y guardar la grabación, comprimida, en Archivos.",
+              "- **▶** reproduce y para lo que suena en la vista: el calentamiento, la canción, el autotune en directo, todos los pads de Vox, un vuelo del avión, o la medida en Rango.",
+              "- El botón del **Autotune** (los escalones) brilla mientras el autotune en directo está activo, estés en la vista que estés.",
               "## Micrófono y auriculares",
               "La primera vez que la app escucha, el teléfono pide permiso para usar el micrófono. En la app de Android, si lo rechazaste, actívalo en *Ajustes → Aplicaciones → SING.Pocket → Permisos → Micrófono*.",
               "**Usa auriculares** cuando cantes con una canción: si no, el micrófono también oye la canción y la prueba de afinación la confunde con tu voz.",
@@ -4430,7 +4476,7 @@ registerProcessor("autotune", AutoTune);
               "- **Octave jump** and **Staccato**: accuracy and breath support.",
               "If an exercise does not fit (the chips say so), choose a lower voice type. The voice ranges are comfortable ones, not limits: never push into pain or strain.",
               "## Your range",
-              "**RANGE** measures your own voice: sing and hold your **lowest** comfortable note until the bar fills, then your **highest**. It tells you how wide your range is and the nearest voice type. **USE MY RANGE** adds **Yours** to the voice list and fits every exercise to exactly your notes; or pick the suggested type. Measure it again now and then: practice widens it.",
+              "**RANGE** opens the **Range** view, where you measure your own voice and fit the exercises to it.",
             ],
             es: [
               "Elige tu **tipo de voz** arriba y toca un **pad de ejercicio**: empieza al momento. Cada ejercicio comienza cerca de lo más grave de tu registro y sube de semitono en semitono (y vuelve a bajar con **UP + DOWN**).",
@@ -4445,7 +4491,7 @@ registerProcessor("autotune", AutoTune);
               "- **Salto de octava** y **Staccato**: precisión y apoyo de la respiración.",
               "Si un ejercicio no cabe (las fichas lo avisan), elige un tipo de voz más grave. Los registros son cómodos, no límites: nunca fuerces hasta sentir dolor o tensión.",
               "## Tu registro",
-              "**RANGE** mide tu propia voz: canta y mantén tu nota **más grave** cómoda hasta que se llene la barra, y luego la **más aguda**. Te dice lo amplio que es tu registro y el tipo de voz más cercano. **USE MY RANGE** añade **Yours** a la lista de voces y ajusta cada ejercicio exactamente a tus notas; o elige el tipo sugerido. Vuelve a medirlo de vez en cuando: la práctica lo amplía.",
+              "**RANGE** abre la vista **Rango**, donde mides tu propia voz y ajustas los ejercicios a ella.",
             ],
           },
         },
@@ -4494,26 +4540,122 @@ registerProcessor("autotune", AutoTune);
           },
         },
         {
+          id: "range",
+          t: { en: "Range", es: "Rango" },
+          b: {
+            en: [
+              "Your **range** is the stretch of notes you can sing comfortably. This view measures it and puts it beside the six voice types, so the warm-ups and the plane fit your voice.",
+              "- **START** (or **▶**): sing and hold your **lowest** comfortable note until the bar fills, then slide up and hold your **highest**. Comfortable means no growl, no whisper, no strain, no squeak.",
+              "- The **chart**: a column for each voice type (Bass, Baritone, Tenor, Alto, Mezzo, Soprano), **YOU** in your colour, and your earlier measures with their dates. The dashed frame is the voice in use. While you sing, a line shows your note.",
+              "- **USE MINE** adds **Yours** to the voice list and fits every exercise to exactly your notes. **USE** (the type named) picks the nearest voice type instead. **VOICE IN USE** at the top changes it by hand.",
+              "Measure it again every few weeks: practice widens it, and **History** keeps every measure.",
+            ],
+            es: [
+              "Tu **rango** es el tramo de notas que cantas con comodidad. Esta vista lo mide y lo pone junto a los seis tipos de voz, para que los calentamientos y el avión se ajusten a tu voz.",
+              "- **START** (o **▶**): canta y mantén tu nota **más grave** cómoda hasta que se llene la barra, luego sube y mantén la **más aguda**. Cómoda quiere decir sin gruñir, sin susurrar, sin forzar, sin chillar.",
+              "- El **gráfico**: una columna por tipo de voz (Bajo, Barítono, Tenor, Contralto, Mezzo, Soprano), **YOU** (tú) en tu color, y tus medidas anteriores con su fecha. El marco discontinuo es la voz en uso. Mientras cantas, una línea muestra tu nota.",
+              "- **USE MINE** añade **Yours** (la tuya) a la lista de voces y ajusta cada ejercicio exactamente a tus notas. **USE** (con el tipo) elige el tipo de voz más cercano. **VOICE IN USE** arriba la cambia a mano.",
+              "Vuelve a medirlo cada pocas semanas: la práctica lo amplía, e **Historial** guarda cada medida.",
+            ],
+          },
+        },
+        {
           id: "at",
           t: { en: "Autotune", es: "Autotune" },
           b: {
             en: [
-              "Autotune pulls your voice to the nearest right note while keeping its sound and its timing. Open it with the **steps** button in the header, or **TUNE** on a recording.",
+              "Autotune pulls your voice to the nearest right note while keeping its sound and its timing. It has its own view (the steps), and **TUNE** on a recording in Files opens it with that recording chosen.",
               "- **NOTES**: every note (chromatic), or only the notes of a key (major or minor). With a key, a wrong note is pulled to a note of the key instead of the nearest semitone.",
               "- **NATURAL** corrects the centre of each note and keeps your vibrato and slides. **HARD** corrects every moment: the flat, stepped robot sound of so many pop records.",
               "## Live",
-              "**LIVE AUTOTUNE** sends your tuned voice to your headphones as you sing, about 40 ms late (wired headphones are best; Bluetooth adds its own delay). **Use headphones**: through the speaker it would howl. **MONITOR** is how loud you hear yourself. While it is on, **recordings keep the tuned voice**; the pitch test still listens to your real voice.",
+              "**LIVE** (or **▶**) sends your tuned voice to your headphones as you sing, about 40 ms late (wired headphones are best; Bluetooth adds its own delay). **Use headphones**: through the speaker it would howl. **MONITOR** is how loud you hear yourself. While it is on, **recordings keep the tuned voice**; the pitch test still listens to your real voice.",
+              "The lane shows what it does: the notes it pulls to are named and bright, the ones it skips are dim; your real voice is the thin line, what you hear the thick one.",
               "## Tuned copies",
-              "**TUNE** on a recording, then **MAKE A TUNED COPY**: a new recording is added (\u201c\u2026 · tuned\u201d) and the original stays. Warm-ups and song takes recorded with the backing keep a second file with the voice apart, so the voice is tuned alone and the backing is mixed back in. Older takes with the backing mixed in do not tune well.",
+              "Choose a recording under **TUNE A RECORDING**, then **TUNED COPY**: a new recording is added (“… · tuned”) and the original stays. Warm-ups and song takes recorded with the backing keep a second file with the voice apart, so the voice is tuned alone and the backing is mixed back in. Older takes with the backing mixed in do not tune well.",
             ],
             es: [
-              "El autotune lleva tu voz a la nota correcta más cercana sin cambiar su sonido ni su ritmo. Ábrelo con el botón de los **escalones** de la cabecera, o con **TUNE** en una grabación.",
+              "El autotune lleva tu voz a la nota correcta más cercana sin cambiar su sonido ni su ritmo. Tiene su propia vista (los escalones), y **TUNE** en una grabación de Archivos la abre con esa grabación elegida.",
               "- **NOTES**: todas las notas (cromático), o solo las de una tonalidad (mayor o menor). Con una tonalidad, una nota equivocada va a una nota de la tonalidad en vez de al semitono más cercano.",
               "- **NATURAL** corrige el centro de cada nota y conserva tu vibrato y tus ligados. **HARD** corrige cada instante: el sonido robótico y escalonado de tantos discos de pop.",
               "## En directo",
-              "**LIVE AUTOTUNE** manda tu voz afinada a los auriculares mientras cantas, unos 40 ms tarde (mejor con cable; el Bluetooth añade su propio retraso). **Usa auriculares**: por el altavoz se acoplaría. **MONITOR** es lo fuerte que te oyes. Mientras está activo, **las grabaciones guardan la voz afinada**; la prueba de afinación sigue escuchando tu voz real.",
+              "**LIVE** (o **▶**) manda tu voz afinada a los auriculares mientras cantas, unos 40 ms tarde (mejor con cable; el Bluetooth añade su propio retraso). **Usa auriculares**: por el altavoz se acoplaría. **MONITOR** es lo fuerte que te oyes. Mientras está activo, **las grabaciones guardan la voz afinada**; la prueba de afinación sigue escuchando tu voz real.",
+              "La pista muestra lo que hace: las notas a las que lleva tienen nombre y brillan, las que salta están apagadas; tu voz real es la línea fina, lo que oyes la gruesa.",
               "## Copias afinadas",
-              "**TUNE** en una grabación y luego **MAKE A TUNED COPY**: se añade una grabación nueva (\u201c\u2026 · tuned\u201d) y la original se queda. Los calentamientos y tomas de canción grabados con acompañamiento guardan un segundo archivo con la voz aparte, así se afina solo la voz y luego se vuelve a mezclar el acompañamiento. Las tomas antiguas con el acompañamiento mezclado no se afinan bien.",
+              "Elige una grabación en **TUNE A RECORDING** y luego **TUNED COPY**: se añade una grabación nueva (“… · tuned”) y la original se queda. Los calentamientos y tomas de canción grabados con acompañamiento guardan un segundo archivo con la voz aparte, así se afina solo la voz y luego se vuelve a mezclar el acompañamiento. Las tomas antiguas con el acompañamiento mezclado no se afinan bien.",
+            ],
+          },
+        },
+        {
+          id: "vox",
+          t: { en: "Vox", es: "Vox" },
+          b: {
+            en: [
+              "**Vox** is a sampler for your voice: 16 pads to record a verse, a hook or a harmony, layer it, cut it and dress it with effects. The same pads, FX and EDIT as TRACK.Pocket's sampler and TUNE.Pocket's looper.",
+              "- **Tap an empty pad** to record into it: three beeps (**COUNT-IN**, at the top, turns them off), then sing. **Tap the red pad** to stop (up to a minute). **REC** in the bar, or **●** in the header, records into the next empty pad.",
+              "- **Tap a sample** to play it, again to stop it. Play as many as you like at once. **THIS PAD** at the top: **PLAYS ONCE** or **LOOPS**. **PLAY ALL** (or **▶**) starts or stops every pad.",
+              "## FX",
+              "Effects baked into the chosen pad: **Reverb**, **Echo**, **Double** (a second you, a hair late), **Chorus**, **Third** and **Fifth** (a harmony above you), **Low voice** (an octave below), **Autotune** (with the key and style of the Autotune view), **Octave ↑ / ↓**, **Radio**, **Lo-fi**, **Drive**, **Filter ↓**. Tap to add or take away; **Original** removes them all. The harmonies and octaves keep the length: only the pitch moves.",
+              "## EDIT",
+              "Tap a pad to choose it. The wave is your voice as recorded, before the effects.",
+              "- **VOLUME** of the pad, and **PITCH**, up to an octave up or down, keeping its length.",
+              "- **OVERDUB** plays the sample and records another layer over it, to the end: sing the harmony. **CROP**: drag across the wave (or drag its handles) and keep that part. **REVERSE**, **NORM.** (normalize: as loud as it can be), **SAVE** (to Files, with its effects, to export), **CLEAR**.",
+              "- **UNDO** (in the bar) takes back the last recording, layer, effect or edit.",
+              "Samples are kept on this phone until you clear them. Use **headphones** for OVERDUB, or the microphone records the sample from the speaker too.",
+            ],
+            es: [
+              "**Vox** es un sampler para tu voz: 16 pads para grabar una estrofa, un estribillo o una armonía, superponer capas, cortarla y vestirla con efectos. Los mismos pads, FX y EDIT que el sampler de TRACK.Pocket y el looper de TUNE.Pocket.",
+              "- **Toca un pad vacío** para grabar en él: tres pitidos (**COUNT-IN**, arriba, los quita) y canta. **Toca el pad rojo** para parar (hasta un minuto). **REC** en la barra, o **●** en la cabecera, graba en el siguiente pad vacío.",
+              "- **Toca una muestra** para oírla, otra vez para pararla. Toca todas las que quieras a la vez. **THIS PAD** arriba: **PLAYS ONCE** (una vez) o **LOOPS** (en bucle). **PLAY ALL** (o **▶**) inicia o para todos los pads.",
+              "## FX",
+              "Efectos fijados en el pad elegido: **Reverb**, **Echo**, **Double** (otro tú, un pelo tarde), **Chorus**, **Third** y **Fifth** (una armonía por encima), **Low voice** (una octava por debajo), **Autotune** (con la tonalidad y el estilo de la vista Autotune), **Octave ↑ / ↓**, **Radio**, **Lo-fi**, **Drive**, **Filter ↓**. Toca para añadir o quitar; **Original** los quita todos. Las armonías y octavas mantienen la duración: solo se mueve el tono.",
+              "## EDIT",
+              "Toca un pad para elegirlo. La onda es tu voz tal como se grabó, antes de los efectos.",
+              "- **VOLUME** del pad, y **PITCH**, hasta una octava arriba o abajo, sin cambiar su duración.",
+              "- **OVERDUB** reproduce la muestra y graba otra capa encima, hasta el final: canta la armonía. **CROP**: arrastra por la onda (o mueve sus extremos) y quédate con esa parte. **REVERSE** (al revés), **NORM.** (normalizar: tan fuerte como se pueda), **SAVE** (a Archivos, con sus efectos, para exportarla), **CLEAR** (borrar).",
+              "- **UNDO** (en la barra) deshace la última grabación, capa, efecto o edición.",
+              "Las muestras se guardan en el teléfono hasta que las borras. Usa **auriculares** para OVERDUB, o el micrófono también grabará la muestra que sale del altavoz.",
+            ],
+          },
+        },
+        {
+          id: "game",
+          t: { en: "Plane", es: "Avión" },
+          b: {
+            en: [
+              "A paper plane flies through hoops, and your voice is the stick: the higher you sing, the higher it flies. The hoops follow a warm-up exercise in your range, a semitone higher each round, so it is a warm-up in disguise.",
+              "- **START** (or **▶**): three beeps, then sing each hoop's note as you reach it. A long note is a tunnel of small hoops: hold it. When you are quiet the plane glides down.",
+              "- **LEVEL**: **EASY** has wide hoops, forgives the octave and gives the plane a hand towards the hoop; **MEDIUM**, a semitone either way, octave-free; **HARD**, a quarter tone, in the right octave, faster and longer.",
+              "- **FLIGHT**: which exercise the hoops draw (scales, arpeggios, octave jumps, sirens…). **CUE NOTES**: the piano plays each new note a beat before its hoop (off by default on Hard).",
+              "- The score grows with each hoop in a row. The dashed line is the height of the next hoop, the dotted trail your flight. The voice in use (the button with its name opens **Range**) sets the height of the sky.",
+              "Every flight goes to **History**, with your best score for each level.",
+            ],
+            es: [
+              "Un avión de papel vuela a través de aros, y tu voz es la palanca: cuanto más agudo cantas, más alto vuela. Los aros siguen un ejercicio de calentamiento en tu rango, un semitono más alto cada vuelta: es un calentamiento disfrazado.",
+              "- **START** (o **▶**): tres pitidos, y canta la nota de cada aro al llegar a él. Una nota larga es un túnel de aros pequeños: mantenla. Si te callas, el avión planea hacia abajo.",
+              "- **LEVEL**: **EASY** tiene aros anchos, perdona la octava y ayuda al avión hacia el aro; **MEDIUM**, un semitono arriba o abajo, sin importar la octava; **HARD**, un cuarto de tono, en la octava correcta, más rápido y más largo.",
+              "- **FLIGHT**: qué ejercicio dibujan los aros (escalas, arpegios, saltos de octava, sirenas…). **CUE NOTES**: el piano toca cada nota nueva un pulso antes de su aro (apagado por defecto en Hard).",
+              "- La puntuación crece con cada aro seguido. La línea discontinua es la altura del siguiente aro, el rastro punteado tu vuelo. La voz en uso (el botón con su nombre abre **Rango**) fija la altura del cielo.",
+              "Cada vuelo va al **Historial**, con tu mejor puntuación en cada nivel.",
+            ],
+          },
+        },
+        {
+          id: "prog",
+          t: { en: "History", es: "Historial" },
+          b: {
+            en: [
+              "Your practice over time, all kept on this phone.",
+              "- **Days in a row** with some singing, **minutes** in the last 7 days, and how in tune your **warm-ups** were (against the week before); a chart of the minutes of the last 14 days.",
+              "- **Songs**: every song you recorded takes of, with its best and last score and how it moves.",
+              "- **Plane**: each level with its flights, best score and how many hoops you made lately. **Range**: every measure, with its date and voice type.",
+              "Deleting a recording keeps it in the history; **CLEAR THE HISTORY** starts the practice log over (two taps).",
+            ],
+            es: [
+              "Tu práctica a lo largo del tiempo, guardada en el teléfono.",
+              "- **Días seguidos** cantando, **minutos** de los últimos 7 días y lo afinados que fueron tus **calentamientos** (frente a la semana anterior); un gráfico con los minutos de los últimos 14 días.",
+              "- **Songs**: cada canción de la que grabaste tomas, con su mejor y última nota y cómo evoluciona.",
+              "- **Plane**: cada nivel con sus vuelos, la mejor puntuación y cuántos aros hiciste últimamente. **Range**: cada medida, con su fecha y tipo de voz.",
+              "Borrar una grabación la mantiene en el historial; **CLEAR THE HISTORY** empieza de cero el registro de práctica (dos toques).",
             ],
           },
         },
@@ -4524,12 +4666,11 @@ registerProcessor("autotune", AutoTune);
             en: [
               "The last view (the disk) lists your **songs** and your **recordings**, newest first.",
               "- **OPEN** reopens a song in the Song view, **SAVE** exports its audio (for a video, the sound taken from it). **✕** deletes, after a second tap.",
-              "- **▶** plays a recording, **SAVE** exports it as a compressed audio file (in the Android app, through the share sheet: save it to Files, Drive, or send it). **Tap a name to rename it.** Song recordings show their pitch score.",
+              "- **▶** plays a recording, **TUNE** opens it in the Autotune view, **SAVE** exports it as a compressed audio file (in the Android app, through the share sheet: save it to Files, Drive, or send it). **Tap a name to rename it.** Song recordings show their pitch score.",
               "- **●** in this view records a **free session**: sing anything.",
               "## The bottom bar",
               "- **FILES**: open a song, **import** a recording (any audio file), and how much space the app uses.",
               "- **OPTIONS**: **note names** in letters (**A B C**) or solfège (**Do Re Mi**), shared with TRACK.Pocket and TUNE.Pocket; **BACKING IN RECORDINGS** (on: warm-ups and song takes record the piano or the song with your voice, like a performance; off: only your voice); **OCTAVE-FREE** for the pitch test.",
-              "- **PROGRESS**: your practice over time. **Days in a row** with some singing, **minutes** in the last 7 days, and how in tune your **warm-ups** were (against the week before); a chart of the minutes of the last 14 days; and every **song** you recorded takes of, with its best and last score and how it moves. Deleting a recording keeps it in the history; **CLEAR THE HISTORY** starts it over.",
               "- **THEME**: the six looks shared with TRACK.Pocket. On wide screens the backdrop is animated and moves with the song, the piano or your voice.",
               "- **HELP**: this manual.",
               "Recordings are compressed (Opus or AAC, about 0.7 MB a minute) and stored on this device only, inside the app. Uninstalling the app deletes them: SAVE the ones you want to keep.",
@@ -4537,12 +4678,11 @@ registerProcessor("autotune", AutoTune);
             es: [
               "La última vista (el disco) lista tus **canciones** y tus **grabaciones**, las más recientes primero.",
               "- **OPEN** vuelve a abrir una canción en la vista Canción, **SAVE** exporta su audio (de un vídeo, el sonido extraído). **✕** borra, tras un segundo toque.",
-              "- **▶** reproduce una grabación, **SAVE** la exporta como archivo de audio comprimido (en la app de Android, con el menú de compartir: guárdala en Archivos, Drive, o envíala). **Toca un nombre para cambiarlo.** Las grabaciones de canción muestran su nota de afinación.",
+              "- **▶** reproduce una grabación, **TUNE** la abre en la vista Autotune, **SAVE** la exporta como archivo de audio comprimido (en la app de Android, con el menú de compartir: guárdala en Archivos, Drive, o envíala). **Toca un nombre para cambiarlo.** Las grabaciones de canción muestran su nota de afinación.",
               "- **●** en esta vista graba una **sesión libre**: canta lo que quieras.",
               "## La barra inferior",
               "- **FILES**: abrir una canción, **importar** una grabación (cualquier archivo de audio), y cuánto espacio usa la app.",
               "- **OPTIONS**: **nombres de las notas** en letras (**A B C**) o solfeo (**Do Re Mi**), compartido con TRACK.Pocket y TUNE.Pocket; **BACKING IN RECORDINGS** (activado: los calentamientos y tomas de canción graban el piano o la canción junto a tu voz, como una actuación; desactivado: solo tu voz); **OCTAVE-FREE** para la prueba de afinación.",
-              "- **PROGRESS**: tu práctica a lo largo del tiempo. **Días seguidos** cantando, **minutos** de los últimos 7 días y lo afinados que fueron tus **calentamientos** (frente a la semana anterior); un gráfico con los minutos de los últimos 14 días; y cada **canción** de la que grabaste tomas, con su mejor y última nota y cómo evoluciona. Borrar una grabación la mantiene en el historial; **CLEAR THE HISTORY** lo empieza de cero.",
               "- **THEME**: los seis aspectos que comparte con TRACK.Pocket. En pantallas anchas el fondo está animado y se mueve con la canción, el piano o tu voz.",
               "- **HELP**: este manual.",
               "Las grabaciones se comprimen (Opus o AAC, unos 0,7 MB por minuto) y se guardan solo en este dispositivo, dentro de la app. Desinstalar la app las borra: guarda con SAVE las que quieras conservar.",
@@ -4663,6 +4803,1544 @@ registerProcessor("autotune", AutoTune);
       }
       $("#wOpen").onclick = () => welcomeDone(true);
       $("#wOk").onclick = () => welcomeDone(false);
+
+      // ======================================================================
+      // the tabs: range, autotune, vox (vocal samples), plane (the game), history
+      // ======================================================================
+      Object.assign(ICONS, {
+        rec: IC('<circle cx="12" cy="12" r="6" fill="currentColor"/>'),
+        fx: IC('<path d="M5 12a7 7 0 0 1 14 0M8 12a4 4 0 0 1 8 0"/><circle cx="12" cy="12" r="1.5"/><path d="M12 14v6"/>'),
+        edit: IC('<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13 7l4 4"/>'),
+        undo: IC('<path d="M9 6L4 11l5 5"/><path d="M4 11h10a5 5 0 0 1 0 10h-3"/>'),
+        warm: IC('<path d="M12 3c3 4 5 6 5 10a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-5 1-9z"/>'),
+        plane: IC('<path d="M3 11l18-7-6 17-3-7z"/><path d="M12 14l9-10"/>'),
+        nat: IC('<path d="M3 15c2.5-7 4.5 3 7-3s4.5 4 7-2 2.5 0 4 0"/>'),
+        hard: IC('<path d="M3 18h5v-5h5V8h5V4"/>'),
+        copy: IC('<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V4H4v12h4"/>'),
+      });
+      const LINE = (g, x0, y0, x1, y1) => (g.beginPath(), g.moveTo(x0, y0), g.lineTo(x1, y1), g.stroke());
+      const micFree = () => !W.on && !P.on && !RG.on && !G.on && !VX.rec && !(AT && AT.live) && micStop();
+
+      // ---- RANGE: hold the lowest comfortable note, then the highest; the chart puts it next to every voice type
+      const RG = { on: false, step: 0, lo: 0, hi: 0, iv: 0, run: [], anchor: NaN, m: NaN, done: false };
+      const HOLD = 30; // ticks of 50 ms: hold a note 1.5 s
+      async function rangeStart() {
+        warmStop();
+        songStop();
+        Object.assign(RG, { step: 0, run: [], done: false, m: NaN });
+        if (!(await micStart())) return rangeFace();
+        RG.on = true;
+        clearInterval(RG.iv);
+        RG.iv = setInterval(rangeTick, 50);
+        rangeFace();
+      }
+      function rangeStop() {
+        clearInterval(RG.iv);
+        if (!RG.on) return;
+        RG.on = false;
+        RG.m = NaN;
+        micFree();
+        rangeFace();
+      }
+      function rangeTick() {
+        if (!RG.on) return;
+        const { m } = voiceNow();
+        RG.m = m;
+        rangeDraw();
+        if (m !== m) {
+          RG.run = [];
+          $("#rgNote").textContent = "—";
+          $("#rgBar").style.width = "0";
+          return;
+        }
+        $("#rgNote").textContent = noteName(m);
+        if (!RG.run.length || Math.abs(m - RG.anchor) > 0.8) ((RG.run = []), (RG.anchor = m));
+        RG.run.push(m);
+        $("#rgBar").style.width = Math.min(100, (RG.run.length / HOLD) * 100) + "%";
+        if (RG.run.length < HOLD) return;
+        const xs = RG.run.slice().sort((a, b) => a - b),
+          note = Math.round(xs[xs.length >> 1]);
+        RG.run = [];
+        if (RG.step === 0) {
+          RG.lo = note;
+          RG.step = 1;
+        } else if (note < RG.lo + 7) return toast(`${noteName(note)} is not much higher than ${noteName(RG.lo)}: go higher (no strain)`, 2400);
+        else {
+          RG.hi = note;
+          RG.step = 2;
+          RG.done = true;
+          S.ranges = [...(S.ranges || []), { d: Date.now(), lo: RG.lo, hi: RG.hi }].slice(-12);
+          saveState();
+          return rangeStop();
+        }
+        rangeFace();
+      }
+      // the built-in voice type nearest to a range
+      function rangeType(lo, hi) {
+        return VOICE_TYPES.map((k) => [k, Math.abs(VOICES[k][1] - lo) + Math.abs(VOICES[k][2] - hi)]).sort((a, b) => a[1] - b[1])[0][0];
+      }
+      // the range shown: this measure, else the last one kept, else the one in use
+      const rangeLast = () => (RG.done ? [RG.lo, RG.hi] : S.ranges && S.ranges.length ? [S.ranges[S.ranges.length - 1].lo, S.ranges[S.ranges.length - 1].hi] : S.range);
+      const spanTxt = (s) => `${Math.floor(s / 12)} octave${Math.floor(s / 12) === 1 ? "" : "s"}${s % 12 ? " and " + (s % 12) + " semitone" + (s % 12 === 1 ? "" : "s") : ""}`;
+      function rangeFace() {
+        const st = $("#rgStep"),
+          last = rangeLast(),
+          k = last ? rangeType(last[0], last[1]) : null;
+        $("#rgBar").style.width = "0";
+        $("#rgRes").innerHTML = "";
+        if (RG.on) {
+          $("#rgNote").textContent = "—";
+          st.innerHTML =
+            RG.step === 0
+              ? `<b>1 · Your lowest note.</b> Sing an easy “ah” on the lowest note you can sing comfortably, and hold it until the bar fills.<small>Comfortable: not a growl, not a whisper.</small>`
+              : `<b>2 · Your highest note.</b> Low note: <b>${noteName(RG.lo)}</b>. Now slide up to the highest note you can sing comfortably and hold it.<small>No straining and no squeak: the top note you could sing in a song.</small>`;
+        } else if (last) {
+          const [lo, hi] = last,
+            [vn, vlo, vhi] = VOICES[k];
+          st.innerHTML = RG.done ? "<b>Done.</b>" : "<b>Your last measure.</b>";
+          $("#rgNote").textContent = noteName(lo) + "–" + noteName(hi);
+          $("#rgRes").innerHTML =
+            `Your comfortable range is <b>${spanTxt(hi - lo)}</b>. The nearest voice type is <b>${vn}</b> (${noteName(vlo)}–${noteName(vhi)}). ` +
+            `<span class="hint">USE MINE fits the warm-ups and the plane to exactly your notes. Ranges grow with practice: measure it again in a few weeks.</span>`;
+        } else {
+          $("#rgNote").textContent = "—";
+          st.innerHTML = `<b>Find your range.</b> Tap START, then sing and hold your lowest comfortable note, and then your highest.<small>It takes a minute. No straining: comfortable notes only.</small>`;
+        }
+        rib("rgGo", RG.on ? "stop" : "mic", RG.on ? "STOP" : last ? "MEASURE" : "START", RG.on);
+        rib("rgMine", "range", "USE MINE", S.voice === "mine");
+        $("#rgMine").classList.toggle("dis", !last);
+        rib("rgType", "guide", k ? "USE " + VOICES[k][0].toUpperCase() : "VOICE TYPE", !!k && S.voice === k);
+        $("#rgType").classList.toggle("dis", !k);
+        rib("rgWarm", "warm", "WARM-UP");
+        rib("rgGame", "plane", "PLANE");
+        const sel = $("#rgVoice"),
+          [vn, lo, hi] = VOICES[S.voice];
+        sel.innerHTML = Object.entries(VOICES)
+          .map(([key, [n, a, b]]) => `<option value="${key}">${n} · ${noteName(a)}–${noteName(b)}</option>`)
+          .join("");
+        sel.value = S.voice;
+        $("#rgVoiceTxt").innerHTML = `<i>VOICE IN USE</i>${vn} ${noteName(lo)}–${noteName(hi)}`;
+        $("#rgNow").innerHTML = last ? `<i>YOUR RANGE</i>${noteName(last[0])}–${noteName(last[1])}` : `<i>YOUR RANGE</i>NOT MEASURED`;
+        rangeDraw();
+        playFace();
+      }
+      // the chart: a column per voice type, yours, and your earlier measures; the note you sing runs across
+      function rangeDraw() {
+        const cv = $("#rgCv");
+        if (!cv.offsetParent) return;
+        const [g, w, h, d] = fitCanvas(cv),
+          LO = 36,
+          HI = 88,
+          pt = 12 * d,
+          pb = 30 * d,
+          left = 30 * d,
+          y = (m) => h - pb - ((m - LO) / (HI - LO)) * (h - pt - pb),
+          C = { line: css("--line"), dim: css("--dim"), acc: css("--acc"), acc2: css("--acc2"), text: css("--text"), hi: css("--hi") };
+        g.clearRect(0, 0, w, h);
+        g.font = `700 ${9 * d}px ${css("--mono") || "monospace"}`;
+        g.textBaseline = "middle";
+        for (let m = LO; m <= HI; m++) {
+          const pc = m % 12;
+          if (![0, 2, 4, 5, 7, 9, 11].includes(pc)) continue;
+          g.fillStyle = C.line;
+          g.globalAlpha = pc === 0 ? 1 : 0.4;
+          g.fillRect(left, Math.round(y(m)), w - left - 4 * d, d);
+          if (pc === 0 || pc === 7) {
+            g.globalAlpha = 1;
+            g.fillStyle = C.dim;
+            g.fillText(noteName(m), 3 * d, y(m));
+          }
+        }
+        g.globalAlpha = 1;
+        const last = rangeLast(),
+          past = (S.ranges || []).slice(-6, -1),
+          cols = [...VOICE_TYPES.map((k, i) => ({ k, lo: VOICES[k][1], hi: VOICES[k][2], name: VOICES[k][0].slice(0, 5).toUpperCase(), c: PC(i) })), { k: "you", lo: last && last[0], hi: last && last[1], name: "YOU" }, ...past.map((r) => ({ k: "past", lo: r.lo, hi: r.hi, name: new Date(r.d).toLocaleDateString(undefined, { day: "numeric", month: "numeric" }) }))],
+          cw = (w - left - 4 * d) / cols.length;
+        g.textAlign = "center";
+        cols.forEach((c, i) => {
+          const x = left + i * cw + cw * 0.2,
+            bw = cw * 0.6,
+            cx = x + bw / 2;
+          g.fillStyle = c.k === "you" ? C.acc : C.dim;
+          g.font = `800 ${(c.k === "past" ? 7.5 : 8.5) * d}px ${css("--mono") || "monospace"}`;
+          g.fillText(c.name, cx, h - 12 * d);
+          if (c.lo == null) {
+            if (c.k === "you") ((g.fillStyle = C.dim), g.fillText("?", cx, y((LO + HI) / 2)));
+            return;
+          }
+          const y0 = y(c.hi + 0.5),
+            y1 = y(c.lo - 0.5);
+          g.beginPath();
+          g.roundRect(x, y0, bw, y1 - y0, 4 * d);
+          if (c.k === "you") {
+            g.fillStyle = C.acc;
+            g.globalAlpha = 0.55;
+            g.fill();
+            g.globalAlpha = 1;
+            g.strokeStyle = C.acc;
+            g.lineWidth = 2 * d;
+            g.stroke();
+            g.fillStyle = C.text;
+            g.font = `800 ${8 * d}px ${css("--mono") || "monospace"}`;
+            g.fillText(noteName(c.hi), cx, y0 - 7 * d);
+            g.fillText(noteName(c.lo), cx, y1 + 7 * d);
+          } else {
+            g.fillStyle = c.c ? `rgb(${c.c})` : C.dim;
+            g.globalAlpha = c.k === "past" ? 0.25 : 0.3;
+            g.fill();
+            g.globalAlpha = c.k === "past" ? 0.5 : 0.9;
+            g.strokeStyle = c.c ? `rgb(${c.c})` : C.dim;
+            g.lineWidth = d;
+            g.stroke();
+            g.globalAlpha = 1;
+          }
+          if (c.k === S.voice || (c.k === "you" && S.voice === "mine")) {
+            g.strokeStyle = C.hi;
+            g.lineWidth = 1.5 * d;
+            g.setLineDash([3 * d, 3 * d]);
+            g.strokeRect(x - 3 * d, y0 - 3 * d, bw + 6 * d, y1 - y0 + 6 * d);
+            g.setLineDash([]);
+          }
+        });
+        // while measuring: the low note found, and the note you are singing right now
+        if (RG.on && RG.step === 1) {
+          g.fillStyle = C.acc;
+          g.fillRect(left, y(RG.lo) - d, w - left, 2 * d);
+        }
+        if (RG.on && RG.m === RG.m) {
+          const yy = y(clamp(RG.m, LO, HI));
+          g.strokeStyle = C.acc2;
+          g.lineWidth = 2 * d;
+          LINE(g, left, yy, w - 4 * d, yy);
+          g.fillStyle = C.acc2;
+          g.textAlign = "right";
+          g.font = `900 ${12 * d}px ${css("--mono") || "monospace"}`;
+          g.fillText(noteName(RG.m), w - 6 * d, yy - 9 * d);
+        }
+        g.textAlign = "left";
+      }
+      $("#rgGo").onclick = () => (RG.on ? rangeStop() : rangeStart());
+      $("#rgMine").onclick = () => {
+        const last = rangeLast();
+        if (!last) return;
+        S.range = last.slice();
+        S.voice = "mine";
+        rangeVoice();
+        saveState();
+        renderWarm();
+        rangeFace();
+        toast("Voice: yours, " + noteName(last[0]) + "–" + noteName(last[1]));
+      };
+      $("#rgType").onclick = () => {
+        const last = rangeLast();
+        if (!last) return;
+        S.voice = rangeType(last[0], last[1]);
+        rangeVoice();
+        saveState();
+        renderWarm();
+        rangeFace();
+        toast("Voice: " + VOICES[S.voice][0] + " " + noteName(VOICES[S.voice][1]) + "–" + noteName(VOICES[S.voice][2]));
+      };
+      $("#rgVoice").onchange = (e) => {
+        S.voice = e.target.value;
+        saveState();
+        renderWarm();
+        rangeFace();
+      };
+      $("#rgWarm").onclick = () => showView("warm");
+      $("#rgGame").onclick = () => showView("game");
+      $("#wRange").onclick = () => showView("range");
+
+      // ---- AUTOTUNE: the settings, live through headphones with a trace of what it does, and tuned copies
+      const ATV = { trace: [], c: NaN };
+      function atFace() {
+        $('#hViews [data-v="at"]').classList.toggle("live", AT.live);
+        rib("atLive", "mic", AT.live ? "LIVE · ON" : "LIVE", AT.live);
+        rib("atNat", "nat", "NATURAL", S.at.style === "nat");
+        rib("atHard", "hard", "HARD", S.at.style === "hard");
+        rib("atGo", "copy", AT.busy ? "TUNING…" : "TUNED COPY", false);
+        $("#atGo").classList.toggle("dis", !AT.take || AT.busy);
+        const sel = $("#atKey");
+        if (!sel.options.length) {
+          const nm = (pc) => noteName(60 + pc).replace(/-?\d+$/, "");
+          sel.innerHTML =
+            `<option value="-1">Every note (chromatic)</option>` +
+            Array.from({ length: 12 }, (_, i) => `<option value="${i}">${nm(i)} major</option><option value="m${i}">${nm(i)} minor</option>`).join("");
+        }
+        sel.value = String(S.at.key);
+        $("#atKeyTxt").innerHTML = `<i>NOTES</i>${esc(sel.selectedOptions[0] ? sel.selectedOptions[0].text : "")}`;
+        $("#atMon").value = S.at.mon;
+        $("#atMonTxt").textContent = Math.round(S.at.mon * 100) + "%";
+        if (S.view === "at") playFace();
+        if (!AT.live && S.view === "at") atDraw();
+      }
+      function atSet() {
+        if (AT.node) AT.node.port.postMessage(atParams());
+        atFace();
+        saveState();
+      }
+      // the recordings to tune: the list, newest first
+      async function atTakesFill() {
+        const ts = (await dbAll("takes")).sort((a, b) => b.date - a.date),
+          sel = $("#atTakeSel");
+        if (AT.take && !ts.some((t) => t.id === AT.take)) AT.take = null;
+        sel.innerHTML = `<option value="">Choose a recording…</option>` + ts.map((t) => `<option value="${t.id}">${esc(t.name)} · ${mmss(t.dur || 0)}</option>`).join("");
+        sel.value = AT.take || "";
+        const t = ts.find((x) => x.id === AT.take);
+        $("#atTakeTxt").innerHTML = t ? `<i>TUNE A RECORDING</i>${esc(t.name)}` : `<i>TUNE A RECORDING</i>${ts.length ? "CHOOSE ONE" : "NO RECORDINGS YET"}`;
+        $("#atInfo").textContent = t
+          ? `TUNED COPY adds “${t.name} · tuned” to Files; the original stays.${t.stems ? " The backing is mixed back in after tuning the voice." : t.kind === "song" || t.kind === "warm" ? " If this take has the backing mixed in, tuning will struggle." : ""}`
+          : "LIVE: use headphones; you hear your tuned voice about 40 ms late, and recordings keep it.";
+        atFace();
+      }
+      async function atOpen(takeId) {
+        AT.take = takeId || null;
+        showView("at");
+        atTakesFill();
+      }
+      function atFrame() {
+        if (!AT.live) return atDraw();
+        const { m } = voiceNow(),
+          now = performance.now() / 1000,
+          { allowed, hard } = atParams();
+        let q = NaN;
+        if (m === m) {
+          let best = Math.round(m),
+            bd = 99;
+          for (let k = Math.floor(m) - 6; k <= Math.ceil(m) + 6; k++)
+            if (allowed[((k % 12) + 12) % 12] && Math.abs(k - m) < bd) ((bd = Math.abs(k - m)), (best = k));
+          q = hard ? best : m + (best - m) * 0.85;
+          ATV.c = ATV.c === ATV.c ? ATV.c + (m - ATV.c) * 0.04 : m;
+          $("#atNote").textContent = noteName(best);
+          const c = Math.round((m - best) * 100);
+          $("#atCents").textContent = (c > 0 ? "+" : "") + c + "¢ → 0";
+          $("#atLane").className = "lane " + (Math.abs(c) < 15 ? "ok" : c < 0 ? "flat" : "sharp");
+        } else {
+          $("#atNote").textContent = "—";
+          $("#atCents").textContent = "";
+          $("#atLane").className = "lane";
+        }
+        ATV.trace.push({ t: now, m, q });
+        while (ATV.trace.length && ATV.trace[0].t < now - 6) ATV.trace.shift();
+        atDraw(now);
+      }
+      // the lane: the notes it pulls to (bright) and the ones it skips (dim); your voice (thin) and what you hear (thick)
+      function atDraw(now = performance.now() / 1000) {
+        const cv = $("#atCv");
+        if (!cv.offsetParent) return;
+        const [g, w, h, d] = fitCanvas(cv),
+          { allowed } = atParams(),
+          ctr = ATV.c === ATV.c ? ATV.c : (VOICES[S.voice][1] + VOICES[S.voice][2]) / 2,
+          span = 14,
+          y = (m) => h / 2 - ((m - ctr) / span) * h,
+          x = (t) => w - 50 * d - ((now - t) / 6) * (w - 80 * d),
+          C = { line: css("--line"), dim: css("--dim"), acc: css("--acc"), acc2: css("--acc2"), text: css("--text") };
+        g.clearRect(0, 0, w, h);
+        g.font = `700 ${9 * d}px ${css("--mono") || "monospace"}`;
+        g.textBaseline = "middle";
+        for (let k = Math.floor(ctr - span / 2) - 1; k <= Math.ceil(ctr + span / 2) + 1; k++) {
+          const ok = allowed[((k % 12) + 12) % 12],
+            yy = Math.round(y(k));
+          g.fillStyle = ok ? C.acc2 : C.line;
+          g.globalAlpha = ok ? 0.35 : 0.5;
+          g.fillRect(28 * d, yy, w - 28 * d, ok ? d : d * 0.6);
+          if (ok) {
+            g.globalAlpha = 0.9;
+            g.fillStyle = C.dim;
+            g.fillText(noteName(k), 3 * d, yy);
+          }
+        }
+        g.globalAlpha = 1;
+        const path = (key, col, lw) => {
+          g.strokeStyle = col;
+          g.lineWidth = lw * d;
+          g.lineJoin = "round";
+          g.beginPath();
+          let pen = false;
+          for (const p of ATV.trace) {
+            const v = p[key];
+            if (v !== v) {
+              pen = false;
+              continue;
+            }
+            pen ? g.lineTo(x(p.t), y(v)) : g.moveTo(x(p.t), y(v));
+            pen = true;
+          }
+          g.stroke();
+        };
+        if (AT.live) {
+          path("m", C.dim, 1.5);
+          path("q", C.acc, 3.5);
+        } else {
+          g.fillStyle = C.dim;
+          g.textAlign = "center";
+          g.font = `800 ${12 * d}px system-ui, sans-serif`;
+          g.fillText("LIVE is off", w / 2, h / 2 - 9 * d);
+          g.font = `600 ${10 * d}px system-ui, sans-serif`;
+          g.fillText("Put on headphones and tap LIVE: your voice thin, what you hear thick", w / 2, h / 2 + 9 * d);
+          g.textAlign = "left";
+        }
+      }
+      $("#atKey").onchange = (e) => ((S.at.key = e.target.value), atSet());
+      $("#atNat").onclick = () => ((S.at.style = "nat"), atSet());
+      $("#atHard").onclick = () => ((S.at.style = "hard"), atSet());
+      $("#atMon").oninput = (e) => {
+        S.at.mon = +e.target.value;
+        if (AT.mon) AT.mon.gain.value = S.at.mon;
+        $("#atMonTxt").textContent = Math.round(S.at.mon * 100) + "%";
+      };
+      $("#atMon").onchange = saveState;
+      async function atToggle() {
+        if (AT.live) return (atLiveOff(), (ATV.trace = []), atFace());
+        if (await atLiveOn()) {
+          toast("Live autotune on: use headphones");
+          loop();
+        }
+      }
+      $("#atLive").onclick = atToggle;
+      $("#atTakeSel").onchange = (e) => {
+        AT.take = e.target.value || null;
+        atTakesFill();
+      };
+      $("#atGo").onclick = async () => {
+        if (AT.busy || !AT.take) return;
+        AT.busy = true;
+        atFace();
+        try {
+          const t = await dbGet("takes", AT.take),
+            { blob, dur } = await atRender(t),
+            copy = Object.assign({}, t, { id: newId(), date: Date.now(), blob, mime: blob.type, dur, stems: null, pcm: null, score: null, pitch: [], tuned: true, name: (t.name + " · tuned").slice(0, 80) });
+          await dbPut("takes", copy);
+          AT.take = copy.id;
+          renderList();
+          toast("Tuned copy added to Files");
+        } catch (err) {
+          toast("Could not tune this recording" + (err && err.message ? ": " + err.message : ""), 3000);
+        }
+        AT.busy = false;
+        atTakesFill();
+      };
+      // the same processor on a plain buffer (the vox samples)
+      async function atProcess(v, sr) {
+        const n = v.length,
+          L = atLatency(sr),
+          oc = new OfflineAudioContext(1, n + L, sr);
+        await atModule(oc);
+        const b = oc.createBuffer(1, n, sr);
+        b.getChannelData(0).set(v);
+        const node = new AudioWorkletNode(oc, "autotune", { numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [1], processorOptions: atParams() }),
+          s = oc.createBufferSource();
+        s.buffer = b;
+        s.connect(node).connect(oc.destination);
+        s.start();
+        return (await oc.startRendering()).getChannelData(0).slice(L, L + n);
+      }
+
+      // ---- VOX: 16 pads of your own voice. Record a verse, layer harmonies on it, crop it, bake effects into it
+      const VFX = [
+        ["rvb", "Reverb", "big hall"],
+        ["ech", "Echo", "repeats"],
+        ["dbl", "Double", "two of you"],
+        ["cho", "Chorus", "shimmer"],
+        ["h3", "Third", "+ harmony"],
+        ["h5", "Fifth", "+ harmony"],
+        ["low", "Low voice", "+ octave ↓"],
+        ["at", "Autotune", "as set there"],
+        ["oup", "Octave ↑", "higher"],
+        ["odn", "Octave ↓", "deeper"],
+        ["rad", "Radio", "tiny speaker"],
+        ["lofi", "Lo-fi", "crunch"],
+        ["drv", "Drive", "distort"],
+        ["flo", "Filter ↓", "darker"],
+        ["off", "Original", "remove all"],
+      ];
+      // a sample: { name, rate, raw (your voice, with its layers and edits), data (raw through fx and pitch), fx, pitch, vol, loop }
+      const VX = { s: Array(16).fill(null), sel: 0, rec: null, panel: "pads", play: new Map(), undo: [], crop: null, bus: null, busy: 0, chunks: [], cap: null, capSrc: null, iv: 0 };
+      const vxLat = () => (ctx.outputLatency || 0) + 2 * (ctx.baseLatency || 0) + 0.01;
+      const vxDur = (s) => s.data.length / s.rate;
+      function vxSave(i) {
+        const s = VX.s[i];
+        if (!s) return dbDel("vox", i).catch(() => {});
+        const { name, rate, raw, data, fx, pitch, vol, loop } = s;
+        dbPut("vox", { i, name, rate, raw, data, fx, pitch, vol, loop }).catch(() => toast("Could not save the sample: storage full?"));
+      }
+      async function vxLoad() {
+        try {
+          (await dbAll("vox")).forEach((r) => r.i >= 0 && r.i < 16 && (VX.s[r.i] = r));
+        } catch {}
+        if (S.view === "vox") vxFace();
+      }
+      function vxBuf(s) {
+        if (!s.buf || s.buf._d !== s.data) {
+          s.buf = ctx.createBuffer(1, s.data.length, s.rate);
+          s.buf.getChannelData(0).set(s.data);
+          s.buf._d = s.data;
+        }
+        return s.buf;
+      }
+      function vxPeaks(d, n) {
+        const step = Math.max(1, Math.floor(d.length / n)),
+          out = [];
+        for (let i = 0; i < n; i++) {
+          let p = 0;
+          for (let k = i * step, e = Math.min(d.length, k + step); k < e; k += 4) p = Math.max(p, Math.abs(d[k]));
+          out.push(p);
+        }
+        const top = Math.max(0.05, ...out);
+        return out.map((p) => p / top);
+      }
+      const vxPk = (s, key, d, n) => (s[key] && s[key].d === d ? s[key].p : (s[key] = { d, p: vxPeaks(d, n) }).p);
+      const wavePath = (pk) => pk.map((p, x) => `M${x} ${(10 - p * 9.5).toFixed(1)}h.7v${(p * 19 + 0.4).toFixed(1)}h-.7z`).join("");
+      function vxGraph(c) {
+        if (VX.bus) return;
+        VX.bus = c.createGain();
+        VX.bus.connect(c.destination);
+      }
+      async function vxPlay(i, when, once) {
+        const c = await getCtx();
+        vxGraph(c);
+        const s = VX.s[i];
+        if (!s) return;
+        vxStop(i);
+        const src = c.createBufferSource(),
+          g = c.createGain(),
+          t = when || c.currentTime + 0.01;
+        src.buffer = vxBuf(s);
+        src.loop = !!s.loop && !once;
+        g.gain.value = s.vol ?? 1;
+        src.connect(g).connect(VX.bus);
+        src.start(t);
+        const p = { src, g, t };
+        src.onended = () => {
+          if (VX.play.get(i) !== p) return;
+          VX.play.delete(i);
+          vxFace();
+          playFace();
+        };
+        VX.play.set(i, p);
+        vxFace();
+        playFace();
+        loop();
+      }
+      function vxStop(i) {
+        const p = VX.play.get(i);
+        if (!p) return;
+        VX.play.delete(i);
+        try {
+          p.src.onended = null;
+          p.g.gain.setTargetAtTime(0, ctx.currentTime, 0.01);
+          p.src.stop(ctx.currentTime + 0.06);
+        } catch {}
+      }
+      function vxStopAll() {
+        [...VX.play.keys()].forEach(vxStop);
+        vxFace();
+        playFace();
+      }
+      function vxAll() {
+        if (VX.play.size) return vxStopAll();
+        const t = ctx ? ctx.currentTime + 0.03 : 0,
+          is = VX.s.map((s, i) => (s ? i : -1)).filter((i) => i >= 0);
+        if (!is.length) return toast("No samples yet: tap a pad to record one");
+        is.forEach((i) => vxPlay(i, t));
+      }
+      // recording: a tiny AudioWorklet stamps every block of the microphone with the audio clock (as in TUNE's looper)
+      const VCAP = `class C extends AudioWorkletProcessor{constructor(){super();this.b=new Float32Array(2048);this.n=0;this.t=0}
+        process(i){const x=i[0]&&i[0][0];if(x){if(!this.n)this.t=currentTime;this.b.set(x,this.n);this.n+=x.length;
+        if(this.n>=1920){this.port.postMessage({t:this.t,d:this.b.slice(0,this.n)});this.n=0}}return true}}
+        registerProcessor("sing-cap",C)`;
+      async function vxCapOpen() {
+        if (!(await micStart())) return false;
+        const c = ctx;
+        if (VX.cap && VX.capSrc === MIC.src) return true;
+        if (!VX.cap) {
+          if (c.audioWorklet)
+            try {
+              if (!c.__cap) (await c.audioWorklet.addModule("data:application/javascript," + encodeURIComponent(VCAP)), (c.__cap = true));
+              VX.cap = new AudioWorkletNode(c, "sing-cap", { numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [1] });
+              VX.cap.port.onmessage = (e) => VX.rec && VX.chunks.push(e.data);
+            } catch {
+              VX.cap = null;
+            }
+          if (!VX.cap) {
+            const sp = c.createScriptProcessor(2048, 1, 1);
+            sp.onaudioprocess = (e) => VX.rec && VX.chunks.push({ t: c.currentTime - 2048 / c.sampleRate, d: e.inputBuffer.getChannelData(0).slice() });
+            VX.cap = sp;
+          }
+          const z = c.createGain();
+          z.gain.value = 0;
+          VX.cap.connect(z).connect(c.destination);
+        }
+        MIC.src.connect(VX.cap);
+        VX.capSrc = MIC.src;
+        return true;
+      }
+      function vxCut(from, n) {
+        const sr = ctx.sampleRate,
+          out = new Float32Array(n);
+        let got = 0;
+        for (const { t, d } of VX.chunks) {
+          const i0 = Math.round((t - from) * sr);
+          if (i0 >= n || i0 + d.length <= 0) continue;
+          for (let k = Math.max(0, -i0), e = Math.min(d.length, n - i0); k < e; k++) out[i0 + k] = d[k];
+          got += Math.min(d.length, n - i0) - Math.max(0, -i0);
+        }
+        return got > n * 0.6 ? out : null;
+      }
+      async function vxRecord(i, over = false) {
+        if (VX.rec) return toast("Already recording: tap the red pad to stop");
+        if (VX.busy) return toast("Wait a moment: the effects are still being applied");
+        const s = over ? VX.s[i] : null;
+        if (over && !s) return;
+        const c = await getCtx();
+        vxGraph(c);
+        if (!(await vxCapOpen())) return;
+        if (over && s.rate !== c.sampleRate) return toast("This sample was recorded at another sample rate: record a new one to layer it");
+        warmStop();
+        songStop();
+        const now = c.currentTime,
+          cnt = S.vx.count ? 3 : 0,
+          beat = 0.55;
+        for (let k = 0; k < cnt; k++) pluck(c, c.destination, k === cnt - 1 ? 84 : 79, now + 0.05 + k * beat, 0.12, 0.16);
+        const start = now + 0.05 + cnt * beat;
+        VX.chunks = [];
+        VX.rec = { i, over, start, end: over ? start + s.raw.length / s.rate : start + 60 };
+        VX.sel = i;
+        if (over) vxPlay(i, start, true);
+        clearInterval(VX.iv);
+        VX.iv = setInterval(() => VX.rec && ctx.currentTime > VX.rec.end + vxLat() + 0.15 && vxRecDone(), 100);
+        vxFace();
+        playFace();
+        loop();
+      }
+      // tap the red pad: before the count ends it cancels, after it the take ends there (a layer always runs to the end)
+      function vxRecStop() {
+        const r = VX.rec;
+        if (!r) return;
+        if (r.over || ctx.currentTime < r.start + 0.3) return vxRecCancel();
+        r.end = ctx.currentTime;
+      }
+      function vxRecCancel() {
+        if (!VX.rec) return;
+        if (VX.rec.over) vxStop(VX.rec.i);
+        VX.rec = null;
+        clearInterval(VX.iv);
+        micFree();
+        vxFace();
+        playFace();
+      }
+      async function vxRecDone() {
+        const r = VX.rec,
+          sr = ctx.sampleRate;
+        VX.rec = null;
+        clearInterval(VX.iv);
+        micFree();
+        const n = Math.round((r.end - r.start) * sr),
+          d = n > sr * 0.3 ? vxCut(r.start + vxLat(), n) : null;
+        if (!d) {
+          toast("Nothing was recorded: check the microphone");
+          return vxFace();
+        }
+        const fd = Math.round(sr * 0.005);
+        for (let k = 0; k < fd; k++) ((d[k] *= k / fd), (d[d.length - 1 - k] *= k / fd));
+        if (r.over && VX.s[r.i]) {
+          const s = VX.s[r.i],
+            mix = new Float32Array(s.raw.length);
+          let p = 0;
+          for (let k = 0; k < mix.length; k++) p = Math.max(p, Math.abs((mix[k] = s.raw[k] + (d[k] || 0))));
+          if (p > 0.98) for (let k = 0; k < mix.length; k++) mix[k] *= 0.98 / p;
+          vxUndoPush(r.i);
+          s.raw = mix;
+          await vxRender(r.i);
+          toast("Layer added");
+        } else {
+          vxUndoPush(r.i);
+          VX.s[r.i] = { name: "VOX " + (r.i + 1), rate: sr, raw: d, data: d, fx: [], pitch: 0, vol: 1, loop: false };
+          vxSave(r.i);
+          toast("Recorded " + mmss(d.length / sr) + ": tap the pad to hear it");
+        }
+        VX.sel = r.i;
+        vxFace();
+        playFace();
+      }
+      // the effects are baked: rendered offline from the raw voice, so they cost nothing when the pad plays
+      function vxImpulse(c, sec) {
+        const n = Math.round(c.sampleRate * sec),
+          b = c.createBuffer(1, n, c.sampleRate),
+          d = b.getChannelData(0);
+        for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 3);
+        return b;
+      }
+      function vxShaper(c, f) {
+        const s = c.createWaveShaper(),
+          k = new Float32Array(1024);
+        for (let i = 0; i < 1024; i++) k[i] = f((i / 1023) * 2 - 1);
+        s.curve = k;
+        return s;
+      }
+      async function vxBake(raw, rate, fx, pitch) {
+        const on = (id) => fx.includes(id);
+        if (!fx.length && !pitch) return raw;
+        let v = raw;
+        if (on("at")) v = await atProcess(v, rate);
+        const base = pitch + (on("oup") ? 12 : 0) + (on("odn") ? -12 : 0),
+          layers = [[base, 1, 0]];
+        if (on("dbl")) layers.push([base + 0.15, 0.8, 0.028]);
+        if (on("h3")) layers.push([base + 4, 0.65, 0]);
+        if (on("h5")) layers.push([base + 7, 0.65, 0]);
+        if (on("low")) layers.push([base - 12, 0.75, 0]);
+        const tail = (on("rvb") ? 2.8 : 0) + (on("ech") ? 2 : 0),
+          len = v.length + Math.round((tail + 0.05) * rate),
+          c = new OfflineAudioContext(1, len, rate),
+          sum = c.createGain(),
+          dry = c.createBuffer(1, v.length, rate),
+          shifted = new Map();
+        dry.getChannelData(0).set(v);
+        for (const [st, gain, delay] of layers) {
+          // a pitch change that keeps the length: stretched longer by the ratio, then played that much faster
+          const r = Math.pow(2, st / 12),
+            key = st.toFixed(3);
+          if (!shifted.has(key)) shifted.set(key, Math.abs(st) < 1e-3 ? dry : await stretch(dry, r));
+          const node = c.createBufferSource(),
+            g = c.createGain();
+          node.buffer = shifted.get(key);
+          node.playbackRate.value = r;
+          g.gain.value = gain / Math.sqrt(layers.length);
+          node.connect(g).connect(sum);
+          node.start(delay);
+        }
+        let x = sum;
+        const link = (n) => (x.connect(n), (x = n));
+        if (on("lofi")) {
+          link(vxShaper(c, (u) => Math.round(u * 12) / 12));
+          const lp = c.createBiquadFilter();
+          lp.frequency.value = 3800;
+          link(lp);
+        }
+        if (on("drv")) {
+          link(vxShaper(c, (u) => Math.tanh(u * 5) * 0.7));
+        }
+        if (on("rad")) {
+          const hp = c.createBiquadFilter(),
+            lp = c.createBiquadFilter();
+          hp.type = "highpass";
+          hp.frequency.value = 650;
+          lp.frequency.value = 3200;
+          link(hp);
+          link(lp);
+          link(vxShaper(c, (u) => Math.tanh(u * 2.5) * 0.8));
+        }
+        if (on("flo")) {
+          const lp = c.createBiquadFilter();
+          lp.frequency.value = 850;
+          lp.Q.value = 1.6;
+          link(lp);
+        }
+        if (on("cho")) {
+          const m = c.createGain(),
+            dl = c.createDelay(0.05),
+            lfo = c.createOscillator(),
+            lg = c.createGain(),
+            wg = c.createGain();
+          dl.delayTime.value = 0.018;
+          lfo.frequency.value = 0.9;
+          lg.gain.value = 0.004;
+          wg.gain.value = 0.7;
+          lfo.connect(lg).connect(dl.delayTime);
+          lfo.start();
+          x.connect(m);
+          x.connect(dl).connect(wg).connect(m);
+          x = m;
+        }
+        const out = c.createGain();
+        x.connect(out);
+        if (on("ech")) {
+          const dl = c.createDelay(1),
+            fb = c.createGain(),
+            wet = c.createGain();
+          dl.delayTime.value = 0.36;
+          fb.gain.value = 0.38;
+          wet.gain.value = 0.5;
+          x.connect(dl);
+          dl.connect(fb).connect(dl);
+          dl.connect(wet).connect(out);
+        }
+        if (on("rvb")) {
+          const cv = c.createConvolver(),
+            wet = c.createGain();
+          cv.buffer = vxImpulse(c, 2.6);
+          wet.gain.value = 0.4;
+          x.connect(cv).connect(wet).connect(out);
+        }
+        out.connect(c.destination);
+        const y = (await c.startRendering()).getChannelData(0);
+        let end = y.length,
+          peak = 0;
+        while (end > v.length && Math.abs(y[end - 1]) < 0.0015) end--;
+        const o = y.slice(0, Math.max(1, end));
+        for (const s of o) peak = Math.max(peak, Math.abs(s));
+        if (peak > 0.99) for (let i = 0; i < o.length; i++) o[i] *= 0.95 / peak;
+        const fl = Math.min(o.length, Math.round(rate * 0.02));
+        if (end > v.length) for (let i = 0; i < fl; i++) o[o.length - 1 - i] *= i / fl;
+        return o;
+      }
+      async function vxRender(i, hear) {
+        const s = VX.s[i];
+        if (!s) return;
+        const job = (s.job = (s.job || 0) + 1);
+        VX.busy++;
+        vxFace();
+        let d;
+        try {
+          d = await vxBake(s.raw, s.rate, s.fx, s.pitch);
+        } catch (e) {
+          d = null;
+          toast("Could not apply the effects");
+        }
+        VX.busy--;
+        if (s.job !== job || VX.s[i] !== s) return vxFace();
+        if (d) s.data = d;
+        vxSave(i);
+        if (hear || VX.play.has(i)) vxPlay(i, 0, !hear ? false : true);
+        vxFace();
+      }
+      function vxUndoPush(i) {
+        const s = VX.s[i];
+        VX.undo.push([i, s && { ...s, buf: null, job: 0 }]);
+        if (VX.undo.length > 20) VX.undo.shift();
+      }
+      function vxUndo() {
+        const u = VX.undo.pop();
+        if (!u) return toast("Nothing to undo");
+        const [i, snap] = u;
+        vxStop(i);
+        VX.s[i] = snap;
+        vxSave(i);
+        vxFace();
+        playFace();
+        toast("Undone");
+      }
+      const vxCur = () => VX.s[VX.sel];
+      function vxEdit(fn, msg) {
+        const s = vxCur();
+        if (!s) return;
+        vxUndoPush(VX.sel);
+        s.raw = fn(s.raw, s);
+        VX.crop = null;
+        vxRender(VX.sel);
+        if (msg) toast(msg);
+      }
+      function vxFace() {
+        if (!$("#vxPads")) return;
+        const r = VX.rec;
+        $("#vxPads").innerHTML = VX.s
+          .map((s, i) => {
+            const st = `<span class="st">${i + 1}</span>`,
+              col = `style="--ccrgb:${PC(i % 6)};--v:.35"`;
+            if (r && r.i === i && !r.over) return `<div class="sq count" data-p="${i}" ${col}>${st}<span class="nt">·</span><span class="in">GET READY</span><i></i></div>`;
+            if (!s) return `<div class="sq empty" data-p="${i}" ${col}>${st}<span class="nt">+</span><span class="in">REC</span></div>`;
+            const cls = ["sq has", VX.play.has(i) ? "play" : "", r && r.i === i ? "rec" : "", VX.panel !== "pads" && VX.sel === i ? "sel" : ""].join(" ");
+            return `<div class="${cls}" data-p="${i}" ${col}><svg class="wv" viewBox="0 0 40 20" preserveAspectRatio="none"><path d="${wavePath(vxPk(s, "pk", s.data, 40))}"/></svg>${st}<span class="nt">${i + 1}</span><span class="in">${mmss(vxDur(s))}${s.fx.length || s.pitch ? " · FX" : ""}${s.loop ? " · ∞" : ""}</span><i></i></div>`;
+          })
+          .join("");
+        if (!$("#vxFx").childElementCount)
+          $("#vxFx").innerHTML = VFX.map(
+            ([id, n, h], i) => `<div class="sq has" data-fx="${id}" style="--ccrgb:${id === "off" ? "232,236,243" : PC(Math.floor(i / 2))};--v:.25"><span class="nt sm">${n}</span><span class="in">${h}</span></div>`,
+          ).join("");
+        const s = vxCur();
+        $("#vxPads").hidden = VX.panel === "fx";
+        $("#vxFxP").hidden = VX.panel !== "fx";
+        $("#vxEdit").hidden = VX.panel !== "edit";
+        $("#vxFx").classList.toggle("busy", VX.busy > 0);
+        $$("#vxFx [data-fx]").forEach((e) => e.classList.toggle("ok", !!s && s.fx.includes(e.dataset.fx)));
+        $("#vxInfo").innerHTML = s
+          ? `<i>PAD ${VX.sel + 1}${VX.busy ? " · APPLYING…" : ""}</i>${mmss(vxDur(s))}${s.fx.length ? " · " + s.fx.map((id) => VFX.find((f) => f[0] === id)[1]).join(", ") : ""}${s.pitch ? ` · ${s.pitch > 0 ? "+" : ""}${s.pitch} st` : ""}`
+          : `<i>PAD ${VX.sel + 1}</i>EMPTY: TAP IT TO RECORD`;
+        $("#vxCount").innerHTML = `<i>COUNT-IN</i>${S.vx.count ? "3 BEEPS" : "OFF"}`;
+        $("#vxCount").classList.toggle("on", !!S.vx.count);
+        $("#vxLoopB").innerHTML = `<i>THIS PAD</i>${s && s.loop ? "LOOPS" : "PLAYS ONCE"}`;
+        $("#vxLoopB").classList.toggle("on", !!(s && s.loop));
+        $("#vxLoopB").classList.toggle("dis", !s);
+        const any = VX.play.size > 0,
+          has = VX.s.some(Boolean);
+        rib("vxPlay", any ? "stop" : "play", any ? "STOP ALL" : "PLAY ALL", any);
+        $("#vxPlay").classList.toggle("dis", !has && !any);
+        rib("vxRec", "rec", r ? (r.over ? "CANCEL" : "STOP") : "REC", !!r);
+        rib("vxFxB", "fx", "FX" + (s && s.fx.length ? " · " + s.fx.length : ""), VX.panel === "fx");
+        rib("vxEditB", "edit", "EDIT", VX.panel === "edit");
+        rib("vxUndo", "undo", "UNDO");
+        $("#vxUndo").classList.toggle("dis", !VX.undo.length);
+        $("#vxVol").value = s ? (s.vol ?? 1) : 1;
+        $("#vxVolTxt").textContent = s ? Math.round((s.vol ?? 1) * 100) + "%" : "";
+        $("#vxPitch").value = s ? s.pitch : 0;
+        $("#vxPitchTxt").textContent = s ? (s.pitch > 0 ? "+" : s.pitch < 0 ? "" : "±") + s.pitch + " st" : "";
+        $$("#vxEdit button").forEach((b) => b.classList.toggle("dis", !s));
+        const cr = VX.crop && VX.crop.i === VX.sel && s ? Math.abs(VX.crop.b - VX.crop.a) * (s.raw.length / s.rate) : 0;
+        $("#vxCrop").innerHTML = `CROP<i>${cr > 0.05 ? "KEEP " + cr.toFixed(1) + " s" : "DRAG THE WAVE"}</i>`;
+        $("#vxCrop").classList.toggle("on", cr > 0.05);
+        $("#vxOver").classList.toggle("on", !!(r && r.over));
+        vxFrame();
+      }
+      // every frame: the count-in, the take, and how far each pad has played
+      function vxFrame() {
+        if (!ctx || S.view !== "vox") return;
+        const now = ctx.currentTime,
+          r = VX.rec;
+        $$("#vxPads .sq").forEach((el) => {
+          const i = +el.dataset.p,
+            s = VX.s[i],
+            bar = el.querySelector("i");
+          if (r && r.i === i) {
+            const left = r.start - now;
+            if (left > 0) {
+              if (!r.over) el.querySelector(".nt").textContent = Math.ceil(left / 0.55);
+              el.classList.add("count");
+              el.classList.remove("rec");
+            } else {
+              el.classList.remove("count");
+              el.classList.add("rec");
+              if (!r.over) el.querySelector(".nt").textContent = "REC";
+              el.querySelector(".in").textContent = (r.over ? "LAYER " : "") + mmss(-left) + (r.over ? "" : " · TAP TO STOP");
+            }
+            if (bar) bar.style.width = r.over ? Math.min(100, (-left / (r.end - r.start)) * 100) + "%" : Math.min(100, (-left / 60) * 100) + "%";
+          } else if (s && bar) {
+            const p = VX.play.get(i),
+              dur = vxDur(s);
+            bar.style.width = p && now >= p.t ? (((((now - p.t) % dur) + dur) % dur) / dur) * 100 + "%" : "0";
+          }
+        });
+        if (VX.panel === "edit") vxWave();
+      }
+      // the edit wave: the raw voice (the effects are applied after), the crop handles, and where it plays
+      function vxWave() {
+        const cv = $("#vxWave"),
+          s = vxCur();
+        if (!cv.offsetParent) return;
+        const [g, w, h, d] = fitCanvas(cv);
+        g.clearRect(0, 0, w, h);
+        if (!s) return;
+        const pk = vxPk(s, "big", s.raw, 240),
+          bw = w / pk.length;
+        g.fillStyle = `rgb(${PC(VX.sel % 6)})`;
+        pk.forEach((p, x) => g.fillRect(x * bw, h / 2 - (p * h) / 2.2, Math.max(1, bw - 0.5), Math.max(d, (p * h) / 1.1)));
+        // a tick each second
+        const sec = s.raw.length / s.rate;
+        g.fillStyle = css("--line");
+        for (let t = 1; t < sec; t++) g.fillRect((t / sec) * w, h - 6 * d, d, 6 * d);
+        const cr = VX.crop && VX.crop.i === VX.sel ? VX.crop : null;
+        if (cr) {
+          const a = Math.min(cr.a, cr.b) * w,
+            b = Math.max(cr.a, cr.b) * w;
+          g.globalAlpha = 0.65;
+          g.fillStyle = css("--bg");
+          g.fillRect(0, 0, a, h);
+          g.fillRect(b, 0, w - b, h);
+          g.globalAlpha = 1;
+          g.fillStyle = css("--hi");
+          g.fillRect(a, 0, 2 * d, h);
+          g.fillRect(b - 2 * d, 0, 2 * d, h);
+          g.fillRect(a, 0, 8 * d, 3 * d);
+          g.fillRect(b - 8 * d, h - 3 * d, 8 * d, 3 * d);
+        }
+        const p = VX.play.get(VX.sel);
+        if (p && ctx.currentTime >= p.t) {
+          const dur = vxDur(s),
+            f = (((ctx.currentTime - p.t) % dur) + dur) % dur;
+          if (f < sec) ((g.fillStyle = css("--acc2")), g.fillRect((f / sec) * w, 0, 2 * d, h));
+        }
+      }
+      (() => {
+        const cv = $("#vxWave");
+        let drag = null;
+        const at = (e) => {
+          const r = cv.getBoundingClientRect();
+          return clamp((e.clientX - r.left) / r.width, 0, 1);
+        };
+        cv.addEventListener("pointerdown", (e) => {
+          if (!vxCur()) return;
+          e.preventDefault();
+          cv.setPointerCapture(e.pointerId);
+          const x = at(e),
+            cr = VX.crop && VX.crop.i === VX.sel ? VX.crop : null,
+            near = 14 / cv.getBoundingClientRect().width;
+          // grab a handle when it is close, else start a new selection
+          if (cr && Math.abs(x - cr.a) < near) drag = "a";
+          else if (cr && Math.abs(x - cr.b) < near) drag = "b";
+          else {
+            VX.crop = { i: VX.sel, a: x, b: x };
+            drag = "b";
+          }
+          vxFace();
+        });
+        cv.addEventListener("pointermove", (e) => {
+          if (!drag || !VX.crop) return;
+          VX.crop[drag] = at(e);
+          vxFace();
+        });
+        const up = () => {
+          if (VX.crop && Math.abs(VX.crop.b - VX.crop.a) < 0.01) VX.crop = null;
+          drag = null;
+          vxFace();
+        };
+        cv.addEventListener("pointerup", up);
+        cv.addEventListener("pointercancel", up);
+      })();
+      $("#vxPads").addEventListener("pointerdown", (e) => {
+        const p = e.target.closest("[data-p]");
+        if (!p) return;
+        e.preventDefault();
+        const i = +p.dataset.p;
+        if (VX.rec && VX.rec.i === i) return vxRecStop();
+        if (!VX.s[i]) return ((VX.sel = i), vxRecord(i));
+        if (VX.sel !== i) ((VX.sel = i), (VX.crop = null));
+        if (VX.play.has(i)) (vxStop(i), vxFace(), playFace());
+        else getCtx().then(() => vxPlay(i));
+      });
+      $("#vxFx").addEventListener("click", (e) => {
+        const p = e.target.closest("[data-fx]"),
+          s = vxCur();
+        if (!p) return;
+        if (!s) return toast("Choose a pad with a sample first");
+        const id = p.dataset.fx;
+        vxUndoPush(VX.sel);
+        if (id === "off") ((s.fx = []), (s.pitch = 0));
+        else {
+          s.fx = s.fx.includes(id) ? s.fx.filter((x) => x !== id) : [...s.fx, id];
+          if (id === "oup") s.fx = s.fx.filter((x) => x !== "odn");
+          if (id === "odn") s.fx = s.fx.filter((x) => x !== "oup");
+        }
+        getCtx().then(() => vxRender(VX.sel, true));
+      });
+      const vxPanel = (p) => ((VX.panel = VX.panel === p ? "pads" : p), vxFace());
+      $("#vxFxB").onclick = () => vxPanel("fx");
+      $("#vxEditB").onclick = () => vxPanel("edit");
+      $("#vxUndo").onclick = vxUndo;
+      $("#vxPlay").onclick = () => getCtx().then(vxAll);
+      async function vxRecBtn() {
+        if (VX.rec) return vxRecStop();
+        let i = !VX.s[VX.sel] ? VX.sel : VX.s.findIndex((s) => !s);
+        if (i < 0) return toast("All 16 pads have a sample: clear one first");
+        VX.sel = i;
+        vxRecord(i);
+      }
+      $("#vxRec").onclick = vxRecBtn;
+      $("#vxCount").onclick = () => {
+        S.vx.count = !S.vx.count;
+        saveState();
+        vxFace();
+      };
+      $("#vxLoopB").onclick = () => {
+        const s = vxCur();
+        if (!s) return;
+        s.loop = !s.loop;
+        const p = VX.play.get(VX.sel);
+        if (p) p.src.loop = s.loop;
+        vxSave(VX.sel);
+        vxFace();
+      };
+      $("#vxVol").oninput = (e) => {
+        const s = vxCur();
+        if (!s) return;
+        s.vol = +e.target.value;
+        const p = VX.play.get(VX.sel);
+        if (p) p.g.gain.setTargetAtTime(s.vol, ctx.currentTime, 0.02);
+        $("#vxVolTxt").textContent = Math.round(s.vol * 100) + "%";
+      };
+      $("#vxVol").onchange = () => vxSave(VX.sel);
+      let vxPT = 0;
+      $("#vxPitch").oninput = (e) => {
+        const s = vxCur();
+        if (!s) return;
+        if (!vxPT) vxUndoPush(VX.sel);
+        s.pitch = +e.target.value;
+        $("#vxPitchTxt").textContent = (s.pitch > 0 ? "+" : s.pitch < 0 ? "" : "±") + s.pitch + " st";
+        clearTimeout(vxPT);
+        vxPT = setTimeout(() => ((vxPT = 0), getCtx().then(() => vxRender(VX.sel, true))), 400);
+      };
+      $("#vxOver").onclick = () => {
+        if (VX.rec && VX.rec.over) return vxRecCancel();
+        if (vxCur()) vxRecord(VX.sel, true);
+      };
+      $("#vxCrop").onclick = () => {
+        const cr = VX.crop && VX.crop.i === VX.sel ? VX.crop : null,
+          s = vxCur();
+        if (!s) return;
+        if (!cr) return toast("Drag across the wave to choose the part to keep");
+        const a = Math.round(Math.min(cr.a, cr.b) * s.raw.length),
+          b = Math.round(Math.max(cr.a, cr.b) * s.raw.length);
+        if (b - a < s.rate * 0.1) return toast("Choose a longer part");
+        vxEdit((raw) => {
+          const o = raw.slice(a, b),
+            fd = Math.min(o.length >> 2, Math.round(s.rate * 0.005));
+          for (let k = 0; k < fd; k++) ((o[k] *= k / fd), (o[o.length - 1 - k] *= k / fd));
+          return o;
+        }, "Cropped to " + ((b - a) / s.rate).toFixed(1) + " s");
+      };
+      $("#vxRev").onclick = () => vxEdit((raw) => raw.slice().reverse(), "Reversed");
+      $("#vxNorm").onclick = () => {
+        const s = vxCur();
+        if (!s) return;
+        let p = 0;
+        for (const v of s.raw) p = Math.max(p, Math.abs(v));
+        if (p < 1e-4) return toast("This sample is silent");
+        vxEdit((raw) => raw.map((v) => (v / p) * 0.95), "Normalized");
+      };
+      $("#vxClr").onclick = () => {
+        if (!vxCur()) return;
+        vxUndoPush(VX.sel);
+        vxStop(VX.sel);
+        VX.s[VX.sel] = null;
+        VX.crop = null;
+        vxSave(VX.sel);
+        vxFace();
+        playFace();
+        toast("Cleared (UNDO brings it back)");
+      };
+      $("#vxSave").onclick = async () => {
+        const s = vxCur();
+        if (!s) return;
+        const c = await getCtx(),
+          b = c.createBuffer(1, s.data.length, s.rate);
+        b.getChannelData(0).set(s.data);
+        let blob = await toOggOpus(b, "SAVING").catch(() => null);
+        busy(null);
+        if (!blob) {
+          const pcm = new Int16Array(s.data.length);
+          for (let i = 0; i < pcm.length; i++) pcm[i] = Math.max(-32768, Math.min(32767, Math.round(s.data[i] * 32767)));
+          blob = wavBlob(pcm, s.rate);
+        }
+        const d = new Date();
+        await dbPut("takes", { id: newId(), kind: "vox", name: `Vox ${VX.sel + 1} · ${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`, date: Date.now(), blob, mime: blob.type, dur: vxDur(s), pitch: [] });
+        renderList();
+        toast("Saved in Files, with its effects");
+      };
+
+      // ---- PLANE: fly a paper plane through hoops by singing their notes. A warm-up exercise in disguise
+      const GLV = {
+        easy: { name: "EASY", tol: 1.5, assist: 0.45, fold: true, bpm: 66, rounds: 3, hint: "wide hoops, octave-free, a hand on the stick" },
+        mid: { name: "MEDIUM", tol: 1, assist: 0.15, fold: true, bpm: 80, rounds: 4, hint: "a semitone either way, octave-free" },
+        hard: { name: "HARD", tol: 0.5, assist: 0, fold: false, bpm: 96, rounds: 6, hint: "a quarter tone, the right octave" },
+      };
+      const G = { on: false, sung: NaN, t0: 0, now: 0, hoops: [], trail: [], m: NaN, score: 0, combo: 0, hits: 0, end: 0, beat: 1, res: null, last: 0, quiet: 0, prev: null };
+      const gLv = () => GLV[S.game.lvl] || GLV.easy;
+      const gEx = () => EXS.find((e) => e.id === S.game.ex) || EXS[1];
+      // the hoops: the exercise, a semitone higher each round, in your range; long notes are a tunnel of small hoops
+      function gamePlan() {
+        const L = gLv(),
+          ex = gEx(),
+          [, lo, hi] = VOICES[S.voice],
+          beat = 60 / L.bpm,
+          top = Math.max(...ex.n),
+          roots = [];
+        for (let r = lo + 2; r + top <= hi - 1 && roots.length < L.rounds; r++) roots.push(r);
+        if (!roots.length) roots.push(lo);
+        const hoops = [];
+        let t = 3.4;
+        roots.forEach((root, ri) => {
+          if (ex.glide) {
+            ex.d.forEach((dd, i) => {
+              const m0 = root + ex.n[i],
+                m1 = root + ex.n[i + 1],
+                k = Math.max(2, Math.round(dd * 2));
+              for (let j = 0; j < k; j++) hoops.push({ t: t + (j / k) * dd * beat, m: m0 + (m1 - m0) * (j / k), small: j > 0 });
+              t += dd * beat;
+            });
+            hoops.push({ t, m: root + ex.n[ex.n.length - 1] });
+          } else
+            ex.n.forEach((iv, i) => {
+              const len = ex.d[i] * beat;
+              hoops.push({ t: t + Math.min(len, beat) * 0.5, m: root + iv });
+              for (let k = 1; beat * 0.5 + k * beat < len - beat * 0.2; k++) hoops.push({ t: t + beat * 0.5 + k * beat, m: root + iv, small: true });
+              t += len;
+            });
+          t += 2 * beat;
+        });
+        hoops.forEach((h) => (h.st = 0));
+        return { hoops, end: t, beat };
+      }
+      async function gameStart() {
+        warmStop();
+        songStop();
+        rangeStop();
+        if (!(await micStart())) return;
+        const c = ctx,
+          p = gamePlan(),
+          [, lo, hi] = VOICES[S.voice];
+        Object.assign(G, { on: true, t0: c.currentTime, now: 0, hoops: p.hoops, end: p.end, beat: p.beat, trail: [], m: (lo + hi) / 2, score: 0, combo: 0, hits: 0, res: null, last: 0, quiet: 0, prev: null, sung: NaN });
+        for (let k = 0; k < 3; k++) pluck(c, c.destination, k === 2 ? 84 : 79, c.currentTime + 0.35 + k * 1, 0.12, 0.15);
+        gameFace();
+        loop();
+      }
+      function gameStop(done) {
+        if (!G.on) return;
+        G.on = false;
+        if (done) {
+          const n = G.hoops.length,
+            k = S.game.lvl,
+            best = (S.gameBest || {})[k] || 0;
+          G.res = { hits: G.hits, n, score: G.score, best: Math.max(best, G.score), rec: G.score > best };
+          S.gameBest = { ...(S.gameBest || {}), [k]: G.res.best };
+          saveState();
+          logAdd("game", G.now, G.hits / n, gLv().name + " · " + gEx().name);
+        }
+        micFree();
+        gameFace();
+      }
+      function gameFrame() {
+        if (G.on) {
+          const now = ctx.currentTime - G.t0,
+            dt = clamp(now - (G.last || now), 0, 0.1),
+            L = gLv(),
+            [, lo, hi] = VOICES[S.voice],
+            next = G.hoops.find((h) => !h.st);
+          G.last = G.now = now;
+          const { m } = voiceNow();
+          if (m === m) {
+            let x = m;
+            if (next) {
+              if (L.fold) x = next.m + fold(m - next.m);
+              if (L.assist && Math.abs(x - next.m) < 2.5) x += (next.m - x) * L.assist;
+            }
+            G.m += (x - G.m) * Math.min(1, dt * 12);
+            G.quiet = 0;
+            G.sung = m;
+          } else {
+            G.quiet += dt;
+            G.sung = NaN;
+            if (G.quiet > 0.3) G.m -= dt * 1.5;
+          }
+          G.m = clamp(G.m, lo - 4, hi + 4);
+          G.trail.push({ t: now, m: G.m });
+          while (G.trail.length && G.trail[0].t < now - 4) G.trail.shift();
+          for (const h of G.hoops)
+            if (!h.st && now >= h.t) {
+              const ok = Math.abs(G.m - h.m) <= L.tol + (h.small ? 0.25 : 0);
+              h.st = ok ? 1 : -1;
+              h.at = now;
+              if (ok) ((G.hits += 1), (G.combo += 1), (G.score += 100 + 10 * Math.min(G.combo, 20)));
+              else G.combo = 0;
+            }
+          // the cue: each new note on the piano, a beat before its hoop
+          if (S.game.cue)
+            G.hoops.forEach((h, i) => {
+              if (h.cue || h.small || h.t - now > G.beat * 1.25) return;
+              h.cue = 1;
+              const pv = G.hoops[i - 1];
+              if (!pv || Math.round(pv.m) !== Math.round(h.m) || h.t - pv.t > G.beat * 1.6) pluck(ctx, ctx.destination, Math.round(h.m), ctx.currentTime + Math.max(0, h.t - now - G.beat), 0.45, 0.16);
+            });
+          if (now > G.end + 0.6) gameStop(true);
+        }
+        gameDraw();
+      }
+      function gameDraw() {
+        const cv = $("#gCv");
+        if (!cv.offsetParent) return;
+        const [g, w, h, d] = fitCanvas(cv),
+          L = gLv(),
+          [, lo, hi] = VOICES[S.voice],
+          idle = !G.on && !G.res,
+          hoops = idle ? gamePlan().hoops : G.hoops,
+          now = idle ? 2.4 : G.now,
+          pm = idle ? hoops[0].m - 0.8 : G.m,
+          mlo = lo - 3,
+          mhi = hi + 3,
+          pt = 28 * d,
+          pb = 14 * d,
+          semi = (h - pt - pb) / (mhi - mlo),
+          y = (m) => h - pb - (m - mlo) * semi,
+          px = w * 0.22,
+          pps = w * 0.27,
+          X = (t) => px + (t - now) * pps,
+          C = { line: css("--line"), dim: css("--dim"), acc: css("--acc"), acc2: css("--acc2"), hot: css("--hot"), text: css("--text"), hi: css("--hi"), bg: css("--bg") },
+          mono = css("--mono") || "monospace";
+        g.clearRect(0, 0, w, h);
+        // two wireframe ridges, slower than the hoops
+        [
+          [0.12, 0.35, 0.3],
+          [0.25, 0.22, 0.55],
+        ].forEach(([sp, ht, al], k) => {
+          g.strokeStyle = C.line;
+          g.globalAlpha = al;
+          g.lineWidth = d;
+          const ridge = [];
+          for (let x = -20 * d; x <= w + 20 * d; x += 14 * d) {
+            const u = (x + now * pps * sp) / (w * 0.22) + k * 5;
+            ridge.push([x - ((now * pps * sp) % (14 * d)), h - pb - ht * h * (0.35 + 0.65 * Math.abs(Math.sin(u) * Math.sin(u * 0.41 + 1.7)))]);
+          }
+          g.beginPath();
+          ridge.forEach(([x, yy], i) => (i ? g.lineTo(x, yy) : g.moveTo(x, yy)));
+          g.stroke();
+          ridge.forEach(([x, yy], i) => i % 2 || LINE(g, x, yy, x, h - pb));
+        });
+        g.globalAlpha = 1;
+        // the notes: a line for each natural note, named on the left
+        g.font = `700 ${9 * d}px ${mono}`;
+        g.textBaseline = "middle";
+        for (let m = Math.ceil(mlo); m <= mhi; m++) {
+          const pc = ((m % 12) + 12) % 12;
+          if (![0, 2, 4, 5, 7, 9, 11].includes(pc)) continue;
+          g.fillStyle = C.line;
+          g.globalAlpha = pc === 0 ? 0.9 : 0.35;
+          g.fillRect(26 * d, Math.round(y(m)), w, d);
+          if (pc === 0 || semi * 2 > 13 * d) {
+            g.globalAlpha = 0.9;
+            g.fillStyle = C.dim;
+            g.fillText(noteName(m), 3 * d, y(m));
+          }
+        }
+        g.globalAlpha = 1;
+        const next = hoops.find((hh) => !hh.st);
+        if (next && !idle) {
+          g.strokeStyle = C.acc2;
+          g.globalAlpha = 0.45;
+          g.setLineDash([4 * d, 5 * d]);
+          g.lineWidth = d;
+          LINE(g, px, y(next.m), Math.min(w, X(next.t)), y(next.m));
+          g.setLineDash([]);
+          g.globalAlpha = 1;
+        }
+        const vis = hoops.filter((hh) => X(hh.t) > -30 * d && X(hh.t) < w + 30 * d);
+        const ring = (hh, back) => {
+          const x = X(hh.t),
+            yy = y(hh.m),
+            ry = Math.max(9 * d, (L.tol + 0.4) * semi) * (hh.small ? 0.7 : 1),
+            rx = ry * 0.32;
+          g.strokeStyle = hh.st > 0 ? C.acc : hh.st < 0 ? C.hot : C.acc2;
+          g.globalAlpha = hh.st < 0 ? 0.45 : back ? 0.55 : 1;
+          g.lineWidth = (hh.small ? 1.5 : 2.5) * d;
+          g.beginPath();
+          g.ellipse(x, yy, rx, ry, 0, back ? -Math.PI / 2 : Math.PI / 2, back ? Math.PI / 2 : Math.PI * 1.5);
+          g.stroke();
+          if (!back && hh.st > 0 && now - hh.at < 0.45) {
+            const k = (now - hh.at) / 0.45;
+            g.globalAlpha = 1 - k;
+            g.beginPath();
+            g.ellipse(x, yy, rx * (1 + k * 1.5), ry * (1 + k * 0.6), 0, 0, Math.PI * 2);
+            g.stroke();
+          }
+          g.globalAlpha = 1;
+        };
+        vis.forEach((hh) => ring(hh, true));
+        g.textAlign = "center";
+        g.font = `800 ${9 * d}px ${mono}`;
+        vis.forEach((hh, i) => {
+          if (hh.small || Math.abs(hh.m - Math.round(hh.m)) > 0.01) return;
+          g.fillStyle = hh.st > 0 ? C.acc : hh.st < 0 ? C.hot : C.text;
+          g.fillText(noteName(hh.m), X(hh.t), y(hh.m) - Math.max(9 * d, (L.tol + 0.4) * semi) - 8 * d);
+        });
+        g.textAlign = "left";
+        // your flight: the trail of the plane
+        if (!idle) {
+          g.strokeStyle = C.dim;
+          g.lineWidth = 1.5 * d;
+          g.setLineDash([2 * d, 4 * d]);
+          g.beginPath();
+          G.trail.forEach((p, i) => (i ? g.lineTo(X(p.t), y(p.m)) : g.moveTo(X(p.t), y(p.m))));
+          g.stroke();
+          g.setLineDash([]);
+        }
+        // the plane: a folded sheet in lines, nose up when you go up
+        const tr = G.trail,
+          a = tr.length > 3 && !idle ? Math.atan2(-(tr[tr.length - 1].m - tr[tr.length - 4].m) * semi, Math.max(1e-3, tr[tr.length - 1].t - tr[tr.length - 4].t) * pps) : -0.08,
+          s = 15 * d;
+        g.save();
+        g.translate(px, y(pm));
+        g.rotate(clamp(a, -0.6, 0.6));
+        const P = (u, v) => [u * s, v * s],
+          N = P(1.25, 0),
+          T1 = P(-1, -0.7),
+          F = P(-0.45, 0.02),
+          T2 = P(-0.85, 0.5),
+          K = P(-0.2, 0.2);
+        g.fillStyle = C.acc;
+        g.globalAlpha = 0.28;
+        g.beginPath();
+        g.moveTo(...N);
+        g.lineTo(...T1);
+        g.lineTo(...F);
+        g.closePath();
+        g.fill();
+        g.globalAlpha = 1;
+        g.strokeStyle = C.text;
+        g.lineWidth = 1.6 * d;
+        g.lineJoin = "round";
+        g.beginPath();
+        g.moveTo(...N);
+        g.lineTo(...T1);
+        g.lineTo(...F);
+        g.closePath();
+        g.moveTo(...N);
+        g.lineTo(...T2);
+        g.lineTo(...F);
+        g.moveTo(...K);
+        g.lineTo(...N);
+        g.stroke();
+        g.restore();
+        vis.forEach((hh) => ring(hh, false));
+        // the score and the note you sing
+        g.font = `900 ${13 * d}px ${mono}`;
+        g.textBaseline = "top";
+        g.fillStyle = C.text;
+        if (!idle) {
+          g.fillText(String(G.score).padStart(5, "0"), 8 * d, 7 * d);
+          g.font = `800 ${9 * d}px ${mono}`;
+          g.fillStyle = C.dim;
+          g.fillText(`${G.hits}/${G.hoops.filter((hh) => hh.st).length} HOOPS${G.combo > 1 ? " · ×" + G.combo : ""}`, 62 * d, 10 * d);
+          g.textAlign = "right";
+          g.font = `900 ${13 * d}px ${mono}`;
+          g.fillStyle = G.sung === G.sung && next && Math.abs(G.m - next.m) <= L.tol ? C.acc : C.acc2;
+          g.fillText(G.sung === G.sung ? noteName(G.sung) : "—", w - 8 * d, 7 * d);
+          g.textAlign = "left";
+        }
+        // the count, the results, or how to play
+        g.textAlign = "center";
+        g.textBaseline = "middle";
+        const box = (lines) => {
+          const bh = lines.length * 22 * d + 16 * d,
+            bw = Math.min(w - 30 * d, 270 * d);
+          g.fillStyle = C.bg;
+          g.globalAlpha = 0.82;
+          g.fillRect(w / 2 - bw / 2, h / 2 - bh / 2, bw, bh);
+          g.globalAlpha = 1;
+          g.strokeStyle = C.line;
+          g.lineWidth = d;
+          g.strokeRect(w / 2 - bw / 2, h / 2 - bh / 2, bw, bh);
+          lines.forEach(([t, sz, col], i) => {
+            g.font = `900 ${sz * d}px ${mono}`;
+            g.fillStyle = col;
+            g.fillText(t, w / 2, h / 2 - bh / 2 + 19 * d + i * 22 * d);
+          });
+        };
+        if (G.on && now < 3.3) {
+          g.font = `900 ${54 * d}px ${mono}`;
+          g.fillStyle = C.acc2;
+          g.fillText(String(Math.max(1, Math.ceil(3.3 - now - 0.3))), w / 2, h / 2);
+        } else if (!G.on && G.res) {
+          const r = G.res;
+          box([
+            [`${r.hits} OF ${r.n} HOOPS · ${Math.round((r.hits / r.n) * 100)}%`, 13, C.text],
+            [`SCORE ${r.score}`, 17, C.acc],
+            [r.rec ? "NEW BEST!" : `BEST ${r.best}`, 11, r.rec ? C.acc2 : C.dim],
+          ]);
+        } else if (idle)
+          box([
+            ["SING TO FLY", 17, C.acc],
+            ["hold each hoop's note as you reach it", 9, C.text],
+            ["▶ START", 12, C.acc2],
+          ]);
+        g.textAlign = "left";
+        g.textBaseline = "alphabetic";
+      }
+      function gameFace() {
+        const L = gLv(),
+          ex = gEx(),
+          [vn] = VOICES[S.voice];
+        if (!$("#gLvl").options.length) {
+          $("#gLvl").innerHTML = Object.entries(GLV)
+            .map(([k, v]) => `<option value="${k}">${v.name} · ${v.hint}</option>`)
+            .join("");
+          $("#gEx").innerHTML = EXS.map((e) => `<option value="${e.id}">${esc(e.name)} · ${esc(e.hint)}</option>`).join("");
+        }
+        $("#gLvl").value = S.game.lvl;
+        $("#gEx").value = ex.id;
+        $("#gLvlTxt").innerHTML = `<i>LEVEL</i>${L.name}`;
+        $("#gExTxt").innerHTML = `<i>FLIGHT</i>${esc(ex.name)}`;
+        $("#gBest").innerHTML = `<i>BEST</i>${(S.gameBest || {})[S.game.lvl] || 0}`;
+        rib("gPlay", G.on ? "stop" : "play", G.on ? "STOP" : "START", G.on);
+        rib("gCue", "piano", S.game.cue ? "CUE NOTES" : "NO CUE", S.game.cue);
+        rib("gRange", "range", vn.toUpperCase());
+        playFace();
+        gameDraw();
+      }
+      $("#gPlay").onclick = () => (G.on ? gameStop(false) : gameStart());
+      $("#gCue").onclick = () => ((S.game.cue = !S.game.cue), saveState(), gameFace());
+      $("#gRange").onclick = () => showView("range");
+      $("#gLvl").onchange = (e) => {
+        if (G.on) gameStop(false);
+        S.game.lvl = e.target.value;
+        if (S.game.lvl === "hard" && S.game.cue) S.game.cue = false;
+        G.res = null;
+        saveState();
+        gameFace();
+      };
+      $("#gEx").onchange = (e) => {
+        if (G.on) gameStop(false);
+        S.game.ex = e.target.value;
+        G.res = null;
+        saveState();
+        gameFace();
+      };
+
+      // ---- HISTORY: the plane and the range measures, after the practice and songs
+      function progExtra() {
+        const pc = (x) => (x == null ? "—" : Math.round(x * 100) + "%");
+        $("#pgGame").innerHTML =
+          Object.entries(GLV)
+            .map(([k, v]) => {
+              const es = LOG.filter((e) => e.k === "game" && e.n.startsWith(v.name + " ")),
+                sc = es.map((e) => e.sc).filter((x) => x != null),
+                last = sc.slice(-12),
+                pts = last.map((q, i) => `${last.length > 1 ? (i / (last.length - 1)) * 60 + 2 : 32},${20 - q * 18}`);
+              if (!es.length) return "";
+              return (
+                `<div class="pgSong"><div><b>${v.name}</b><small>${es.length} flight${es.length === 1 ? "" : "s"} · best score ${(S.gameBest || {})[k] || 0} · last ${pc(sc[sc.length - 1])} of the hoops</small></div>` +
+                (pts.length ? `<svg viewBox="0 0 64 22"><polyline points="${pts.join(" ")}"/><circle cx="${pts[pts.length - 1].split(",")[0]}" cy="${pts[pts.length - 1].split(",")[1]}" r="2.2"/></svg>` : "") +
+                `</div>`
+              );
+            })
+            .join("") || '<div class="hint">Fly the plane (the paper plane view) to follow your scores here.</div>';
+        $("#pgRange").innerHTML =
+          (S.ranges || [])
+            .slice()
+            .reverse()
+            .map((r) => `<div class="pgSong"><div><b>${noteName(r.lo)}–${noteName(r.hi)}</b><small>${new Date(r.d).toLocaleDateString()} · ${spanTxt(r.hi - r.lo)} · ${VOICES[rangeType(r.lo, r.hi)][0]}</small></div></div>`)
+            .join("") || '<div class="hint">Measure your range (the arrows view) to keep it here.</div>';
+      }
+
+      // ---- the tabs in the views, ▶ and the frame loop
+      function tabsShow(v, prev) {
+        if (prev !== v) {
+          if (prev === "range") rangeStop();
+          if (prev === "game") gameStop(false);
+          if (prev === "vox" && VX.rec) vxRecCancel();
+        }
+        $("#play").hidden = v === "prog";
+        if (v === "range") rangeFace();
+        if (v === "at") atTakesFill();
+        if (v === "vox") vxFace();
+        if (v === "game") gameFace();
+        if (v === "prog") renderProg();
+      }
+      function tabFrame() {
+        const v = S.view;
+        if (v === "at") atFrame();
+        else if (v === "vox") vxFrame();
+        else if (v === "game") gameFrame();
+        else if (v === "range") rangeDraw();
+        else return false;
+        sessionFrame();
+        return true;
+      }
+      const tabBusy = () => (S.view === "at" && AT.live) || (S.view === "vox" && (!!VX.rec || VX.play.size > 0)) || (S.view === "game" && G.on);
+      function tabOn(v) {
+        return v === "range" ? RG.on : v === "at" ? AT.live : v === "vox" ? VX.play.size > 0 : v === "game" ? G.on : null;
+      }
+      function tabPlay() {
+        const v = S.view;
+        if (v === "range") RG.on ? rangeStop() : rangeStart();
+        else if (v === "at") atToggle();
+        else if (v === "vox") getCtx().then(vxAll);
+        else if (v === "game") G.on ? gameStop(false) : gameStart();
+        else return false;
+        return true;
+      }
+      function tabsStop() {
+        rangeStop();
+        gameStop(false);
+        vxRecCancel();
+        if (VX.play.size) vxStopAll();
+      }
+      vxLoad();
 
       // ======================================================================
       // boot

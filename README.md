@@ -2,67 +2,122 @@
 
 # SING.Pocket
 
-A pocket vocal coach in one HTML file: warm-ups that follow your voice, song practice with key and speed change,
-A-B loops, lyrics, a pitch test that shows where you sang in tune and where you didn't, and recorded takes.
-It is the sister app of [TRACK.Pocket](https://github.com/utopick/track-pocket) and
-[TUNE.Pocket](https://github.com/utopick/tune-pocket), and shares their look, six themes, animated backdrop and help manual.
+<!-- your intro here -->
 
-Open `index.html` in a browser (the microphone needs `https://` or `localhost`), or install the Android APK.
+SING.Pocket is a pocket vocal coach: warm-ups that follow your voice, song practice with key and speed change, A-B loops, lyrics, a pitch test that shows where you sang in tune and where you didn't, recorded takes, a range finder, autotune, a sampler for your voice and a singing game. It is the sister app of [TRACK.Pocket](https://github.com/utopick/track-pocket) and [TUNE.Pocket](https://github.com/utopick/tune-pocket), and runs from one self-contained HTML file, with no install and no dependencies.
 
-## Views
+It should run fully offline (only the lyrics search needs a connection), although opening the HTML file directly can cause microphone permission issues, so use the hosted GitHub page instead or self-host the HTML.
 
-- **Warm-up**: 8 exercises (lip trill, 5-note scale, arpeggio, octave jump, staccato, siren, 9-note scale, hum) for
-  six voice types. Each one climbs a semitone at a time through your range and back down. The lane shows the target
-  notes and your live pitch, and every key gets a score.
-- **Song**: open an MP3, M4A, WAV, OGG, FLAC or MP4 from the phone.
-  - **KEY**: transpose −12 to +12 semitones without changing the speed.
-  - **SPEED**: 50–120% without changing the pitch. Both use a WSOLA time stretch done in the app.
-  - **Loops**: tap the overview to jump, drag it (or use SET A / SET B) to loop a part.
-  - **LYRICS**: search lrclib.net, paste them, or open an `.lrc` file.
-  - **Pitch test**: **●** records you singing along and scores each lyric line. Tap a weak line to loop it.
-- **Takes** (last button): your songs and recordings. Play a take, export it as WAV, or delete it. **●** here
-  records a free session. The bottom bar has the pitch-test options, the theme and the help.
+I've been adding features and tweaking a lot, so they come out not fully tested, and there could be bugs. Leave me an issue and I'll fix it.
 
-### About the melody
+There is a help wiki inside (también en español).
 
-The reference melody is estimated from the full mix: the centre of the stereo image, band-passed to the voice range,
-with an autocorrelation pitch tracker. Loud instruments can fool it. Load an a cappella (vocal-only) version of
-the song with **GUIDE**, and that file becomes the melody you sing against.
+![SING.Pocket on five screens, each in a different theme](.github/readme/hero.png)
 
-### About YouTube
+## Why did I release these apps? 
 
-The app does not download from YouTube. Downloading is against YouTube's terms of service, and its embedded player
-doesn't let other apps change the pitch. Use songs you have as files.
+Because GitHub allows me to host them in a GitHub site if I make them public, and I don't want to host them myself. 
+
+Also because my friends told me that they are useful and some of you may want a free, ad-less gadget to pass the time.
+
+
+## Ads and cookies
+
+Yeah, no.
+
+No ads, no cookies, no nothing. This is free and clean. No hidden stealers, no weird intentions.
+
+Why is it free? Because not everything should be a product.
 
 ## AI use
 
-I built this app starting from my own older code, with the help of an AI coding assistant (Claude, by Anthropic), which wrote and reworked much of the code following my directions and ideas.
+I'm a programmer and I have been coding for a living for over two decades, but life has given me too little free time that I want to spend offline and outside, making music and art. So I used a lot of AI to build this in a quick and easy way.
 
-The app itself uses no AI: everything runs on your device, and nothing you play, sing or record is sent to any AI service. The only network request it makes is the optional lyrics search on lrclib.net.
+I'm not going to take credit for the code, even though I started this app from my own older code. I built it with the help of an AI coding assistant (Claude, by Anthropic), which wrote and reworked much of the code following my designs and notes.
 
-## Privacy and storage
+The app itself uses no AI: everything runs on your device, and nothing you play, sing or record is sent to any AI service or anywhere else for that matter. The one exception is the lyrics search: when you tap **FIND**, the song's title and artist go to [lrclib.net](https://lrclib.net). If anything else leaves your phone, just shame me publicly and I'll fix it.
 
-Everything stays on the device: songs and takes in IndexedDB, settings in localStorage. The app makes one kind of
-network request, the lyrics search on lrclib.net, and only when you tap FIND. Uninstalling the Android app deletes
-its songs and takes, so export the takes you want to keep.
+I did waste a lot of tokens by making it code it in a non-minified way, so if the bubble bursts and we go back to the basics it could be maintainable. 
 
-## Android APK
+If you want to try something made by me by hand (95%, I did use an early model to find some bugs but solved them by hand) in which I made the code, assets, music and all, check out Nanaya, my Pico-8 tower defense game: https://www.lexaloffle.com/bbs/?tid=153336
 
-The app is wrapped with Capacitor 6 in `android/`. GitHub Actions builds a debug APK on every push and on demand
-(Actions → Android APK → Run workflow); download it from the run's artifacts.
+![A strip of SING.Pocket screens](.github/readme/strip.png)
 
-To build locally (Node 20, JDK 17 and the Android SDK):
+## How to run it
 
-```sh
+Open `index.html` in a modern web browser. The microphone needs `https://` or `localhost` (or the Android app), which is why the hosted page is the easy way.
+
+## The basics
+
+- **Warm-up:** 8 exercises (lip trill, 5-note scale, arpeggio, octave jump, staccato, siren, 9-note scale, hum) for six voice types or your own range. Each one climbs a semitone at a time through your range and back down. The lane shows the target notes and your live pitch, and every key gets a score.
+- **Song:** open an MP3, M4A, WAV, OGG, FLAC or MP4 from the phone.
+  - **KEY:** transpose −12 to +12 semitones without changing the speed.
+  - **SPEED:** 50–120% without changing the pitch. Both use a WSOLA time stretch done in the app.
+  - **KARAOKE:** turns the centre of the mix (usually the voice) down.
+  - **Loops:** tap the overview to jump, drag it (or use SET A / SET B) to loop a part.
+  - **LYRICS:** search lrclib.net, paste them, or open an `.lrc` file.
+  - **Pitch test:** **●** records you singing along and scores each lyric line. Tap a weak line to loop it.
+- **Range:** hold your lowest and highest comfortable notes. A chart puts your range beside the six voice types and your earlier measures, and **USE MINE** fits the warm-ups and the game to it.
+- **Autotune:** live through headphones (natural or hard, every note or a key), with a trace of your voice and of what you hear, and tuned copies of any recording.
+- **Vox:** a sampler for your voice, with 16 pads. Record a verse after a count-in, overdub harmonies on it, crop it, reverse it, change its pitch, and bake in effects (reverb, echo, double, chorus, third and fifth harmonies, octaves, autotune, radio, lo-fi…). Samples stay on the phone, and **SAVE** sends one to Files.
+- **Plane:** a paper plane flies through hoops, and your voice steers it. The hoops follow a warm-up exercise in your range, on three levels (Easy forgives the octave and helps you aim). It's a warm-up in disguise.
+- **History:** days in a row, minutes a day, your warm-up and song scores over time, your flights and your range measures.
+- **Files** (last button): your songs and recordings. Play a take, open it in Autotune, export it (compressed, Opus or AAC), or delete it. **●** here records a free session.
+
+![The views: warm-up, song, range, vox, the plane game and autotune](.github/readme/views.png)
+
+### Themes
+
+Six looks, from **THEME** at the bottom of the Files screen: Dark, Light, Terminal, Dungeon synth, DMG and Demoscene. All three Pocket apps share them.
+
+![A sing-along in the six themes](.github/readme/themes.png)
+
+### About the melody
+
+The reference melody is estimated from the full mix: the centre of the stereo image, band-passed to the voice range, with an autocorrelation pitch tracker. Loud instruments can fool it. Load an a cappella (vocal-only) version of the song with **VOCAL REF**, and that file becomes the melody you sing against.
+
+### About YouTube
+
+The app does not download from YouTube. Downloading is against YouTube's terms of service, and its embedded player doesn't let other apps change the pitch. Use songs you have as files.
+
+### Your songs and takes
+
+Songs, takes and Vox samples are stored in your browser (IndexedDB), settings in `localStorage`; they are not uploaded anywhere. Clearing browser storage removes them, so export the takes you want to keep.
+
+## Android app (APK)
+
+The same `index.html` is packaged as an Android app with [Capacitor](https://capacitorjs.com). GitHub Actions builds a debug APK on every push (or from **Actions → Android APK → Run workflow**). Download it from the run page under **Artifacts**, unzip it, and open the `.apk` on the phone (Android asks you to allow installing from that source once).
+
+- The first time you sing, Android asks for microphone permission. If you refused it, allow it in **Settings → Apps → SING.Pocket → Permissions**.
+- Everything for the Android build lives in `android/`. The native project (`android/native/`) is generated by each build and is not kept in the repository; `android/scripts/android-permissions.js` adds the microphone permissions to it. The microphone works because the manifest declares `RECORD_AUDIO` and `MODIFY_AUDIO_SETTINGS` and Capacitor asks for them at runtime.
+- Songs and takes live in the app's own storage. They survive app updates but not uninstalling, so export the takes you want to keep.
+
+To build locally you need Node 20, JDK 17 and the Android SDK:
+
+```bash
 cd android
-npm ci
-npm run android:init   # once: creates android/native and adds the microphone permissions
+npm install
+npm run android:init   # once: creates android/native/
 npm run android:apk    # android/native/app/build/outputs/apk/debug/app-debug.apk
 ```
 
-The microphone works because the manifest declares `RECORD_AUDIO` and `MODIFY_AUDIO_SETTINGS` and Capacitor
-asks for them at runtime. The app also doesn't force an audio sample rate, which some phones refuse.
+I did not build it natively, GitHub Actions are free (to a point) and save me dozens of gigabytes from the SDK (seriously?).
 
-## Artwork
 
-The banner, app icons and favicons are lettered in [Inter](https://rsms.me/inter/) (SIL Open Font License 1.1), converted to shapes, so no font file is included.
+## Files
+
+- `index.html` — the complete app (markup, styles, and audio code)
+- `android/` and `.github/workflows/android.yml` — Android build
+- `LICENSE` — license terms
+
+## License
+
+SING.Pocket is released under the MIT License (see `LICENSE`).
+
+AI assisted coding uses the uncredited work of a lot of coders through the years (me included) so anything I make that's not for work its as free as possible.
+
+Have fun.
+
+### Third-party code
+
+The banner, app icons and favicons are lettered in [Inter](https://rsms.me/inter/) (SIL Open Font License 1.1), converted to shapes, so no font file is included. The app itself has no third-party code.
