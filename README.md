@@ -1,3 +1,5 @@
+![SING.Pocket](.github/banner.png)
+
 # SING.Pocket
 
 A pocket vocal coach in one HTML file: warm-ups that follow your voice, song practice with key and speed change,
@@ -60,3 +62,7 @@ npm run android:apk    # android/native/app/build/outputs/apk/debug/app-debug.ap
 
 The microphone works because the manifest declares `RECORD_AUDIO` and `MODIFY_AUDIO_SETTINGS` and Capacitor
 asks for them at runtime. The app also doesn't force an audio sample rate, which some phones refuse.
+
+## Artwork
+
+The banner, app icons and favicons are lettered in [Inter](https://rsms.me/inter/) (SIL Open Font License 1.1), converted to shapes, so no font file is included.
