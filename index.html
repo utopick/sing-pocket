@@ -552,10 +552,12 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         font-family: system-ui, -apple-system, sans-serif;
         white-space: nowrap;
       }
-      #exPads {
+      #exPads,
+      #gPads {
         grid-template-columns: repeat(4, 1fr);
       }
-      #exPads .sq .in {
+      #exPads .sq .in,
+      #gPads .sq .in {
         font-size: 8.5px;
         letter-spacing: 0;
         max-width: 98%;
@@ -1435,8 +1437,8 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
           <label class="knob"><i>TEMPO</i><b id="bpmTxt">90</b><input id="wBpm" type="range" min="50" max="160" step="2" value="90" /></label>
         </div>
         <div class="prow rib">
-          <button id="wPlay"></button><button id="wListen"></button><button id="wDir"></button><button id="wNotes"></button
-          ><button id="wRange"></button>
+          <button id="wPlay"></button><button id="wListen"></button><button id="wDir"></button><button id="wCue"></button
+          ><button id="wNotes"></button><button id="wRange"></button>
         </div>
       </section>
 
@@ -1540,6 +1542,7 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
           <div class="dd inf" style="flex: 0.8"><span id="gBest"></span></div>
         </div>
         <div class="lane" id="gLane"><canvas id="gCv"></canvas></div>
+        <div class="pads" id="gPads"></div>
         <div class="prow rib"><button id="gPlay"></button><button id="gCue"></button><button id="gRange"></button></div>
       </section>
 
@@ -1771,23 +1774,34 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         tempo: 1, // song speed
         octFree: true, // pitch test ignores octave
         backing: true, // recordings of warm-ups and song takes include the piano / the song
-        notes: true, // the piano plays the warm-up notes (else only the cue chord)
+        notes: true, // the piano plays the warm-up notes with you
+        wcue: "phrase", // before each key: "phrase" (the piano plays it all first), "chord" (the starting chord) or "off"
         song: null, // id of the open song
         at: { key: "-1", style: "nat", mon: 1 }, // autotune: key ("-1" every note, "0".."11" major, "m0".."m11" minor)
         range: null, // [low, high] MIDI from the range finder
         kar: false, // karaoke: the song's centre (the voice) taken out
         ranges: [], // the range measures, [{ d, lo, hi }], the last 12
         vx: { count: true }, // vox: a count-in before recording
-        game: { lvl: "easy", ex: "five", cue: true }, // plane: level, the exercise the hoops follow, piano cue
+        game: { lvl: "easy", ex: "five", cue: "phrase" }, // plane: level, the exercise the hoops follow, the cue before each round (as wcue)
         gameBest: {}, // plane: best score per level
       };
       try {
         Object.assign(S, JSON.parse(localStorage.getItem("sing.state") || "{}"));
       } catch {}
+      // the plane's cue used to be on / off
+      if (typeof S.game.cue === "boolean") S.game.cue = S.game.cue ? "phrase" : "off";
+      const CUES = ["phrase", "chord", "off"],
+        CUE_NAME = { phrase: "PHRASE CUE", chord: "CHORD CUE", off: "NO CUE" },
+        CUE_TOAST = {
+          phrase: "Phrase cue: the piano plays the whole exercise first, then you sing it",
+          chord: "Chord cue: only the starting chord, then you sing",
+          off: "No cue: straight from one key to the next",
+        },
+        cueNext = (c) => CUES[(CUES.indexOf(c) + 1) % CUES.length];
       function saveState() {
         try {
-          const { view, voice, ex, bpm, updown, listen, key, tempo, octFree, backing, notes, song, at, range, kar, ranges, vx, game, gameBest } = S;
-          localStorage.setItem("sing.state", JSON.stringify({ view, voice, ex, bpm, updown, listen, key, tempo, octFree, backing, notes, song, at, range, kar, ranges, vx, game, gameBest }));
+          const { view, voice, ex, bpm, updown, listen, key, tempo, octFree, backing, notes, wcue, song, at, range, kar, ranges, vx, game, gameBest } = S;
+          localStorage.setItem("sing.state", JSON.stringify({ view, voice, ex, bpm, updown, listen, key, tempo, octFree, backing, notes, wcue, song, at, range, kar, ranges, vx, game, gameBest }));
         } catch {}
       }
       let dbP;
@@ -2262,7 +2276,8 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         let sum = 0,
           n = 0;
         for (let t = t0; t < t0 + o.span; t += o.span / 60) {
-          const m = o.target(t);
+          let m = o.target(t);
+          if (m !== m && o.ghost) m = o.ghost(t);
           if (m === m) ((sum += m), n++);
         }
         const want = n ? sum / n : o.center.v ?? 60;
@@ -2286,27 +2301,31 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
             g.globalAlpha = 1;
           }
         }
-        // targets
+        // targets, and the cue the piano plays first (ghost: thin and faint, only to listen to)
         const blue = css("--blue") || "#6ab7ff";
         g.lineCap = "round";
-        g.lineWidth = lane * 0.62;
-        g.strokeStyle = blue;
-        g.globalAlpha = 0.5;
-        g.beginPath();
-        let pen = false,
-          pm = NaN;
-        for (let x = 0; x <= w; x += 2 * d) {
-          const t = t0 + (x / w) * o.span,
-            m = o.target(t);
-          if (m !== m || (pen && Math.abs(m - pm) > 0.8)) pen = false;
-          if (m === m) {
-            pen ? g.lineTo(x, Y(m)) : g.moveTo(x, Y(m));
-            pen = true;
+        const path = (fn, lw, col, a) => {
+          g.lineWidth = lw;
+          g.strokeStyle = col;
+          g.globalAlpha = a;
+          g.beginPath();
+          let pen = false,
+            pm = NaN;
+          for (let x = 0; x <= w; x += 2 * d) {
+            const t = t0 + (x / w) * o.span,
+              m = fn(t);
+            if (m !== m || (pen && Math.abs(m - pm) > 0.8)) pen = false;
+            if (m === m) {
+              pen ? g.lineTo(x, Y(m)) : g.moveTo(x, Y(m));
+              pen = true;
+            }
+            pm = m;
           }
-          pm = m;
-        }
-        g.stroke();
-        g.globalAlpha = 1;
+          g.stroke();
+          g.globalAlpha = 1;
+        };
+        if (o.ghost) path(o.ghost, lane * 0.22, css("--dim"), 0.55);
+        path(o.target, lane * 0.62, blue, 0.5);
         // your voice, coloured by how close it is to the target
         const ok = css("--ok"),
           meh = css("--acc2"),
@@ -2409,11 +2428,29 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         for (let r = lo + 2; r + top <= hi - 1; r++) roots.push(r);
         if (S.updown) for (let i = roots.length - 2; i >= 0; i--) roots.push(roots[i]);
         const plan = [],
-          reps = [];
+          reps = [],
+          cues = [];
         let t = 0.4;
         roots.forEach((root, ri) => {
           const cue = t;
-          t += 2 * beat; // the chord cue, then a beat to breathe
+          // PHRASE CUE: the piano plays the whole exercise first, like a vocal coach, then a beat to breathe
+          if (S.wcue === "phrase") {
+            if (ex.glide)
+              ex.d.forEach((dd, i) => {
+                cues.push({ a: t, b: t + dd * beat, m0: root + ex.n[i], m1: root + ex.n[i + 1], glide: true });
+                t += dd * beat;
+              });
+            else
+              ex.n.forEach((iv, i) => {
+                const len = ex.d[i] * beat;
+                cues.push({ a: t, b: t + len * (ex.stac ? 0.45 : 0.97), m0: root + iv, m1: root + iv });
+                t += len;
+              });
+            t += beat;
+          } else if (S.wcue === "chord") {
+            [0, 4, 7].forEach((iv) => cues.push({ a: t, b: t + 1.4 * beat, m0: root + iv, m1: root + iv, chord: true }));
+            t += 2 * beat; // the chord, then a beat to breathe
+          } else t += beat;
           const a = t;
           if (ex.glide)
             ex.d.forEach((dd, i) => {
@@ -2429,12 +2466,14 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
           reps.push({ root, cue, a, b: t, ok: 0, n: 0 });
           t += beat;
         });
-        return { plan, reps, end: t };
+        return { plan, reps, cues, end: t };
       }
-      function warmTarget(t) {
-        for (const p of W.plan) if (t >= p.a && t < p.b) return p.glide ? p.m0 + (p.m1 - p.m0) * ((t - p.a) / (p.b - p.a)) : p.m0;
+      function warmTarget(t, list = W.plan) {
+        for (const p of list) if (t >= p.a && t < p.b) return p.glide ? p.m0 + (p.m1 - p.m0) * ((t - p.a) / (p.b - p.a)) : p.m0;
         return NaN;
       }
+      // the phrase cue, to draw it in the lane (the chord cue is not drawn: three notes at once)
+      const warmGhost = (t) => warmTarget(t, W.cues || []);
       async function warmStart() {
         const c = await getCtx();
         songStop();
@@ -2450,30 +2489,33 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         W.notesG.gain.value = S.notes === false ? 0 : 1;
         W.notesG.connect(W.out);
         W.t0 = c.currentTime + 0.1;
-        // schedule everything now: cue chords, then the pattern on the piano (glides: a sine sliding along)
-        for (const r of W.reps) [0, 4, 7].forEach((iv) => pluck(c, W.out, r.root + iv, W.t0 + r.cue, 1.4 * (60 / S.bpm), 0.12));
-        for (const p of W.plan)
-          if (p.glide) {
-            const o = c.createOscillator(),
-              g = c.createGain(),
-              a = W.t0 + p.a,
-              b = W.t0 + p.b;
-            o.type = "sine";
-            o.frequency.setValueAtTime(midiToHz(p.m0), a);
-            o.frequency.exponentialRampToValueAtTime(midiToHz(p.m1), b);
-            g.gain.setValueAtTime(0.0001, a);
-            g.gain.exponentialRampToValueAtTime(0.16, a + 0.05);
-            g.gain.setValueAtTime(0.16, b - 0.05);
-            g.gain.exponentialRampToValueAtTime(0.0001, b);
-            o.connect(g).connect(W.out);
-            o.start(a);
-            o.stop(b + 0.05);
-          } else pluck(c, W.notesG, p.m0, W.t0 + p.a, p.b - p.a + 0.1);
+        // schedule everything now: the cues (always heard), then the pattern on the piano (glides: a sine sliding along)
+        for (const p of W.cues) p.chord ? pluck(c, W.out, p.m0, W.t0 + p.a, p.b - p.a, 0.12) : warmNote(c, W.out, p);
+        for (const p of W.plan) warmNote(c, p.glide ? W.out : W.notesG, p);
         W.on = true;
         recBacking(W.out);
         warmFace();
         renderWarmChips();
         loop();
+      }
+      // one note of an exercise on the piano, or a sine sliding from m0 to m1
+      function warmNote(c, dest, p) {
+        if (p.glide) {
+          const o = c.createOscillator(),
+            g = c.createGain(),
+            a = W.t0 + p.a,
+            b = W.t0 + p.b;
+          o.type = "sine";
+          o.frequency.setValueAtTime(midiToHz(p.m0), a);
+          o.frequency.exponentialRampToValueAtTime(midiToHz(p.m1), b);
+          g.gain.setValueAtTime(0.0001, a);
+          g.gain.exponentialRampToValueAtTime(0.16, a + 0.05);
+          g.gain.setValueAtTime(0.16, b - 0.05);
+          g.gain.exponentialRampToValueAtTime(0.0001, b);
+          o.connect(g).connect(dest);
+          o.start(a);
+          o.stop(b + 0.05);
+        } else pluck(c, dest, p.m0, W.t0 + p.a, p.b - p.a + 0.1);
       }
       function warmStop() {
         if (!W.on) return;
@@ -2507,9 +2549,11 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
           if (REC.on) REC.pitch.push(+tv.toFixed(3), v.m === v.m ? +v.m.toFixed(2) : null);
         }
         const now = W.on ? t : 0;
-        drawLane($("#wCv"), { now, span: 6, head: 0.35, target: W.on ? warmTarget : () => NaN, voice: W.voice, center: W.center });
+        drawLane($("#wCv"), { now, span: 6, head: 0.35, target: W.on ? warmTarget : () => NaN, ghost: W.on && S.wcue === "phrase" ? warmGhost : null, voice: W.voice, center: W.center });
         hud($("#wLane"), $("#wNote"), $("#wCents"), W.on ? warmTarget(tv) : NaN, v.m);
-        $("#wHint").textContent = REC.on && REC.kind === "warm" ? "● REC " + mmss(ctx.currentTime - REC.t0) : (EXS.find((e) => e.id === S.ex) || EXS[1]).hint;
+        const listening = W.on && S.wcue === "phrase" && W.reps.some((r) => t >= r.cue && t < r.a - 60 / S.bpm);
+        $("#wHint").textContent =
+          REC.on && REC.kind === "warm" ? "● REC " + mmss(ctx.currentTime - REC.t0) : listening ? "♪ LISTEN" : (EXS.find((e) => e.id === S.ex) || EXS[1]).hint;
         if (W.on) {
           const cur = W.reps.findIndex((x) => t < x.b);
           $$("#wChips .chip").forEach((ch, i) => {
@@ -3943,6 +3987,7 @@ registerProcessor("autotune", AutoTune);
         mic: IC('<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>'),
         updown: IC('<path d="M7 20V5M4 8l3-3 3 3M17 4v15M14 16l3 3 3-3"/>'),
         up: IC('<path d="M12 20V5M6 11l6-6 6 6"/>'),
+        cue: IC('<path d="M6 8.5a6.5 6.5 0 1 1 13 0c0 6-6 6-6 10a3.5 3.5 0 1 1-7 0"/><path d="M15 8.5a2.5 2.5 0 0 0-5 0v1a2 2 0 1 1 0 4"/>'),
         piano: IC('<rect x="3" y="5" width="18" height="14" rx="1"/><path d="M8 5v9M13 5v9M18 5v9"/>'),
         open: IC('<path d="M3 7h6l2 2h10v10H3z"/>'),
         a: '<span style="font:900 17px var(--mono)">A</span>',
@@ -3961,7 +4006,8 @@ registerProcessor("autotune", AutoTune);
         rib("wPlay", W.on ? "stop" : "play", W.on ? "STOP" : "START", W.on);
         rib("wListen", "mic", S.listen ? "LISTEN" : "NO MIC", S.listen);
         rib("wDir", S.updown ? "updown" : "up", S.updown ? "UP + DOWN" : "UP ONLY", false);
-        rib("wNotes", "piano", S.notes === false ? "CUE ONLY" : "PIANO", S.notes !== false);
+        rib("wCue", "cue", CUE_NAME[S.wcue] || CUE_NAME.phrase, S.wcue !== "off");
+        rib("wNotes", "piano", S.notes === false ? "NO PIANO" : "PIANO", S.notes !== false);
         rib("wRange", "range", "RANGE", S.voice === "mine");
         karFace();
         rib("sOpen", "open", "OPEN");
@@ -4014,7 +4060,16 @@ registerProcessor("autotune", AutoTune);
         if (W.on && W.notesG) W.notesG.gain.setTargetAtTime(S.notes ? 1 : 0, ctx.currentTime, 0.02);
         saveState();
         ribFace();
-        toast(S.notes ? "The piano plays the notes with you" : "Only the starting chord: find the notes yourself");
+        toast(S.notes ? "The piano plays the notes with you" : "The piano stays quiet while you sing: only the cue");
+      };
+      // the cue before each key: a change starts the exercise again from the top, with the new cue
+      $("#wCue").onclick = () => {
+        S.wcue = cueNext(S.wcue);
+        saveState();
+        ribFace();
+        toast(CUE_TOAST[S.wcue]);
+        if (W.on) (warmStop(), warmStart());
+        else renderWarmChips();
       };
       $("#sOpen").onclick = () => $("#songFile").click();
       $("#sA").onclick = () => {
@@ -4476,10 +4531,10 @@ registerProcessor("autotune", AutoTune);
             en: [
               "Pick your **voice type** at the top, then tap an **exercise pad**: it starts at once. Each exercise begins near the bottom of your range and moves up a semitone at a time (and back down with **UP + DOWN**).",
               "@pitch",
-              "- Before each key the piano plays the chord: breathe, then sing the pattern.",
+              "- **The cue** before each key: with **PHRASE CUE** the piano plays the whole exercise first while you listen (**♪ LISTEN**), then a beat to breathe, then you sing it back. **CHORD CUE** plays only the starting chord, **NO CUE** goes straight on. Changing it starts the exercise again.",
               "- **The lane** scrolls from right to left. The blue bars are the notes to sing; your voice is the line, **green** within 50 cents, **orange** close, **red** off. The corner shows the note and how far you are (▼ flat, ▲ sharp).",
               "- **The chips** under the lane are the keys of the exercise. Each one is coloured by how much of it you sang in tune.",
-              "- **TEMPO** sets the speed. **LISTEN** turns the microphone on or off, **PIANO / CUE ONLY** chooses whether the piano plays the notes with you or only the starting chord (it works while the exercise plays).",
+              "- **TEMPO** sets the speed. **LISTEN** turns the microphone on or off, **PIANO / NO PIANO** chooses whether the piano also plays the notes while you sing them (it works while the exercise plays).",
               "- **●** records the warm-up: your voice and the piano, saved in Files.",
               "## The exercises",
               "- **Lip trill**, **Siren** and **Hum**: gentle, start with these.",
@@ -4492,10 +4547,10 @@ registerProcessor("autotune", AutoTune);
             es: [
               "Elige tu **tipo de voz** arriba y toca un **pad de ejercicio**: empieza al momento. Cada ejercicio comienza cerca de lo más grave de tu registro y sube de semitono en semitono (y vuelve a bajar con **UP + DOWN**).",
               "@pitch",
-              "- Antes de cada tono el piano toca el acorde: respira y canta el patrón.",
+              "- **La pista** antes de cada tono: con **PHRASE CUE** el piano toca el ejercicio entero primero mientras escuchas (**♪ LISTEN**), luego un pulso para respirar, y entonces lo cantas. **CHORD CUE** toca solo el acorde inicial, **NO CUE** sigue directo. Cambiarla empieza el ejercicio de nuevo.",
               "- **El carril** se desplaza de derecha a izquierda. Las barras azules son las notas que hay que cantar; tu voz es la línea, **verde** a menos de 50 cents, **naranja** cerca, **roja** fuera. La esquina muestra la nota y cuánto te desvías (▼ bajo, ▲ alto).",
               "- **Las fichas** bajo el carril son los tonos del ejercicio. Cada una se colorea según cuánto cantaste afinado.",
-              "- **TEMPO** fija la velocidad. **LISTEN** enciende o apaga el micrófono, **PIANO / CUE ONLY** elige si el piano toca las notas contigo o solo el acorde inicial (funciona mientras suena el ejercicio).",
+              "- **TEMPO** fija la velocidad. **LISTEN** enciende o apaga el micrófono, **PIANO / NO PIANO** elige si el piano también toca las notas mientras las cantas (funciona mientras suena el ejercicio).",
               "- **●** graba el calentamiento: tu voz y el piano, guardados en Archivos.",
               "## Los ejercicios",
               "- **Lip trill** (vibración de labios), **Siren** (sirena) y **Hum** (boca cerrada): suaves, empieza por ellos.",
@@ -4643,7 +4698,8 @@ registerProcessor("autotune", AutoTune);
               "- **START** (or **▶**): three beeps, then sing each hoop's note as you reach it. A long note is a tunnel of small hoops: hold it. When you are quiet the plane glides down.",
               "- **The tuner** behind the hoops: **NEXT** is the note of the next hoop, **YOU** the note you sing, and the meter under them shows how far you are, with the hoop's width in green. A note away or more, it tells you to go **HIGHER** or **LOWER**.",
               "- **LEVEL**: **EASY** has wide hoops, forgives the octave and gives the plane a hand towards the hoop; **MEDIUM**, a semitone either way, octave-free; **HARD**, a quarter tone, in the right octave, faster and longer.",
-              "- **FLIGHT**: which exercise the hoops draw (scales, arpeggios, octave jumps, sirens…). **CUE NOTES**: like a vocal exercise, before each round the piano plays the whole phrase while the plane flies on with no hoops (**♪ LISTEN**), then a beat to breathe, and then you sing it back through the hoops. **NO CUE** goes straight from round to round, for when you know it by heart (the default on Hard).",
+              "- **The pads** under the sky (or **FLIGHT** at the top) pick which exercise the hoops draw: the same ones as the warm-ups (scales, arpeggios, octave jumps, sirens…).",
+              "- **The cue** before each round: **PHRASE CUE**, like a vocal exercise, the piano plays the whole phrase while the plane flies on with no hoops (**♪ LISTEN**), then a beat to breathe, and then you sing it back through the hoops. **CHORD CUE** plays only the starting chord. **NO CUE** goes straight from round to round, for when you know it by heart (the default on Hard).",
               "- The score grows with each hoop in a row. The dashed line is the height of the next hoop, the dotted trail your flight. The voice in use (the button with its name opens **Range**) sets the height of the sky.",
               "Every flight goes to **History**, with your best score for each level.",
             ],
@@ -4653,7 +4709,8 @@ registerProcessor("autotune", AutoTune);
               "- **START** (o **▶**): tres pitidos, y canta la nota de cada aro al llegar a él. Una nota larga es un túnel de aros pequeños: mantenla. Si te callas, el avión planea hacia abajo.",
               "- **El afinador** detrás de los aros: **NEXT** es la nota del próximo aro, **YOU** la nota que cantas, y la barra de debajo muestra lo lejos que estás, con el ancho del aro en verde. A una nota o más, te dice que vayas más alto (**HIGHER**) o más bajo (**LOWER**).",
               "- **LEVEL**: **EASY** tiene aros anchos, perdona la octava y ayuda al avión hacia el aro; **MEDIUM**, un semitono arriba o abajo, sin importar la octava; **HARD**, un cuarto de tono, en la octava correcta, más rápido y más largo.",
-              "- **FLIGHT**: qué ejercicio dibujan los aros (escalas, arpegios, saltos de octava, sirenas…). **CUE NOTES**: como en un ejercicio vocal, antes de cada ronda el piano toca la frase entera mientras el avión sigue sin aros (**♪ LISTEN**, escucha), luego un pulso para respirar, y entonces la cantas a través de los aros. **NO CUE** pasa directo de ronda a ronda, para cuando te la sabes de memoria (por defecto en Hard).",
+              "- **Los pads** bajo el cielo (o **FLIGHT** arriba) eligen qué ejercicio dibujan los aros: los mismos que en los calentamientos (escalas, arpegios, saltos de octava, sirenas…).",
+              "- **La pista** antes de cada ronda: **PHRASE CUE**, como en un ejercicio vocal, el piano toca la frase entera mientras el avión sigue sin aros (**♪ LISTEN**, escucha), luego un pulso para respirar, y entonces la cantas a través de los aros. **CHORD CUE** toca solo el acorde inicial. **NO CUE** pasa directo de ronda a ronda, para cuando te la sabes de memoria (por defecto en Hard).",
               "- La puntuación crece con cada aro seguido. La línea discontinua es la altura del siguiente aro, el rastro punteado tu vuelo. La voz en uso (el botón con su nombre abre **Rango**) fija la altura del cielo.",
               "Cada vuelo va al **Historial**, con tu mejor puntuación en cada nivel.",
             ],
@@ -6575,7 +6632,11 @@ registerProcessor("autotune", AutoTune);
         roots.forEach((root, ri) => {
           // CUE NOTES: like a vocal exercise, the piano plays the whole phrase first, the plane flies on
           // through a stretch with no hoops, a beat to breathe, and then you sing it through the hoops
-          if (S.game.cue) {
+          if (S.game.cue === "chord") {
+            [0, 4, 7].forEach((iv) => cues.push({ t, m: root + iv, len: 1.4 * beat }));
+            listen.push([t, t + 2 * beat]);
+            t += 2 * beat;
+          } else if (S.game.cue === "phrase") {
             const t0 = t;
             ex.n.forEach((iv, i) => {
               const len = (ex.d[i] ?? 1) * beat;
@@ -6967,19 +7028,39 @@ registerProcessor("autotune", AutoTune);
         $("#gLvlTxt").innerHTML = `<i>LEVEL</i>${L.name}`;
         $("#gExTxt").innerHTML = `<i>FLIGHT</i>${esc(ex.name)}`;
         $("#gBest").innerHTML = `<i>BEST</i>${(S.gameBest || {})[S.game.lvl] || 0}`;
+        // the flights: the warm-up's exercise pads; a tap picks the one the hoops follow
+        $("#gPads").innerHTML = EXS.map(
+          (e, i) =>
+            `<div class="sq has${e.id === ex.id ? " sel" : ""}" data-ex="${e.id}" style="--ccrgb:${PC(i)};--v:${e.id === ex.id ? 0.7 : 0.25}"><span class="nt sm">${esc(e.name)}</span><span class="in">${esc(e.hint)}</span></div>`,
+        ).join("");
         rib("gPlay", G.on ? "stop" : "play", G.on ? "STOP" : "START", G.on);
-        rib("gCue", "piano", S.game.cue ? "CUE NOTES" : "NO CUE", S.game.cue);
+        rib("gCue", "cue", CUE_NAME[S.game.cue] || CUE_NAME.phrase, S.game.cue !== "off");
         rib("gRange", "range", vn.toUpperCase());
         playFace();
         gameDraw();
       }
       $("#gPlay").onclick = () => (G.on ? gameStop(false) : gameStart());
-      $("#gCue").onclick = () => ((S.game.cue = !S.game.cue), saveState(), gameFace());
+      $("#gCue").onclick = () => {
+        if (G.on) gameStop(false);
+        S.game.cue = cueNext(S.game.cue);
+        saveState();
+        gameFace();
+        toast(CUE_TOAST[S.game.cue].replace("key", "round"));
+      };
       $("#gRange").onclick = () => showView("range");
       $("#gLvl").onchange = (e) => {
         if (G.on) gameStop(false);
         S.game.lvl = e.target.value;
-        if (S.game.lvl === "hard" && S.game.cue) S.game.cue = false;
+        if (S.game.lvl === "hard") S.game.cue = "off";
+        G.res = null;
+        saveState();
+        gameFace();
+      };
+      $("#gPads").onclick = (e) => {
+        const p = e.target.closest("[data-ex]");
+        if (!p) return;
+        if (G.on) gameStop(false);
+        S.game.ex = p.dataset.ex;
         G.res = null;
         saveState();
         gameFace();
