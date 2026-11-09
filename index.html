@@ -1549,7 +1549,7 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
       <section id="vox">
         <div class="prow">
           <div class="dd inf" style="flex: 2"><span id="vxInfo"></span></div>
-          <button id="vxCount"></button><button id="vxLoopB"></button>
+          <button id="vxCount"></button><button id="vxMon"></button><button id="vxLoopB"></button>
         </div>
         <div class="pads" id="vxPads"></div>
         <div class="jp" id="vxFxP" hidden><div class="pads" id="vxFx"></div></div>
@@ -1854,7 +1854,7 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         range: null, // [low, high] MIDI from the range finder
         kar: false, // karaoke: the song's centre (the voice) taken out
         ranges: [], // the range measures, [{ d, lo, hi }], the last 12
-        vx: { count: true }, // vox: a count-in before recording
+        vx: { count: true, mon: true }, // vox: a count-in before recording; mon = hear the sample while recording a layer over it
         game: { lvl: "easy", ex: "five", cue: "phrase" }, // plane: level, the exercise the hoops follow, the cue before each round (as wcue)
         gameBest: {}, // plane: best score per level
       };
@@ -5125,7 +5125,7 @@ registerProcessor("autotune", AutoTune);
           b: {
             en: [
               "The **Sampler** is for your voice: 16 pads to record a verse, a hook or a harmony, layer it, cut it and dress it with effects. The same pads, FX and EDIT as TRACK.Pocket's sampler and TUNE.Pocket's looper.",
-              "- **Tap an empty pad** to record into it: three beeps (**COUNT-IN**, at the top, turns them off), then sing. **Tap the red pad** to stop (up to a minute). **REC** in the bar, or **●** in the header, records into the next empty pad.",
+              "- **Tap an empty pad** to record into it: three short clicks (**COUNT-IN**, at the top, turns them off), then sing. **Tap the red pad** to stop (up to a minute). **REC** in the bar, or **●** in the header, records into the next empty pad.",
               "- **Tap a sample** to play it, again to stop it. Play as many as you like at once. **THIS PAD** at the top: **PLAYS ONCE** or **LOOPS**. **PLAY ALL** (or **▶**) starts or stops every pad.",
               "## FX",
               "Effects baked into the chosen pad: **Reverb**, **Echo**, **Double** (a second you, a hair late), **Chorus**, **Third** and **Fifth** (a harmony above you), **Low voice** (an octave below), **Autotune** (with the key and style of the Autotune view), **Octave ↑ / ↓**, **Radio**, **Lo-fi**, **Drive**, **Filter ↓**. Tap to add or take away; **Original** removes them all. The harmonies and octaves keep the length: only the pitch moves.",
@@ -5134,11 +5134,11 @@ registerProcessor("autotune", AutoTune);
               "- **VOLUME** of the pad, and **PITCH**, up to an octave up or down, keeping its length.",
               "- **OVERDUB** plays the sample and records another layer over it, to the end: sing the harmony. **CROP**: drag across the wave (or drag its handles) and keep that part. **REVERSE**, **NORM.** (normalize: as loud as it can be), **SAVE** (to Files, with its effects, to export), **CLEAR**.",
               "- **UNDO** (in the bar) takes back the last recording, layer, effect or edit.",
-              "Samples are kept on this phone until you clear them. Use **headphones** for OVERDUB, or the microphone records the sample from the speaker too.",
+              "Samples are kept on this phone until you clear them. For OVERDUB use **headphones**, or set **OVERDUB: SILENT** at the top: the sample keeps quiet while you sing the new layer (it is still in time), so the speaker doesn't get into the recording.",
             ],
             es: [
               "El **Sampler** es para tu voz: 16 pads para grabar una estrofa, un estribillo o una armonía, superponer capas, cortarla y vestirla con efectos. Los mismos pads, FX y EDIT que el sampler de TRACK.Pocket y el looper de TUNE.Pocket.",
-              "- **Toca un pad vacío** para grabar en él: tres pitidos (**COUNT-IN**, arriba, los quita) y canta. **Toca el pad rojo** para parar (hasta un minuto). **REC** en la barra, o **●** en la cabecera, graba en el siguiente pad vacío.",
+              "- **Toca un pad vacío** para grabar en él: tres clics cortos (**COUNT-IN**, arriba, los quita) y canta. **Toca el pad rojo** para parar (hasta un minuto). **REC** en la barra, o **●** en la cabecera, graba en el siguiente pad vacío.",
               "- **Toca una muestra** para oírla, otra vez para pararla. Toca todas las que quieras a la vez. **THIS PAD** arriba: **PLAYS ONCE** (una vez) o **LOOPS** (en bucle). **PLAY ALL** (o **▶**) inicia o para todos los pads.",
               "## FX",
               "Efectos fijados en el pad elegido: **Reverb**, **Echo**, **Double** (otro tú, un pelo tarde), **Chorus**, **Third** y **Fifth** (una armonía por encima), **Low voice** (una octava por debajo), **Autotune** (con la tonalidad y el estilo de la vista Autotune), **Octave ↑ / ↓**, **Radio**, **Lo-fi**, **Drive**, **Filter ↓**. Toca para añadir o quitar; **Original** los quita todos. Las armonías y octavas mantienen la duración: solo se mueve el tono.",
@@ -5147,7 +5147,7 @@ registerProcessor("autotune", AutoTune);
               "- **VOLUME** del pad, y **PITCH**, hasta una octava arriba o abajo, sin cambiar su duración.",
               "- **OVERDUB** reproduce la muestra y graba otra capa encima, hasta el final: canta la armonía. **CROP**: arrastra por la onda (o mueve sus extremos) y quédate con esa parte. **REVERSE** (al revés), **NORM.** (normalizar: tan fuerte como se pueda), **SAVE** (a Archivos, con sus efectos, para exportarla), **CLEAR** (borrar).",
               "- **UNDO** (en la barra) deshace la última grabación, capa, efecto o edición.",
-              "Las muestras se guardan en el teléfono hasta que las borras. Usa **auriculares** para OVERDUB, o el micrófono también grabará la muestra que sale del altavoz.",
+              "Las muestras se guardan en el teléfono hasta que las borras. Para OVERDUB usa **auriculares**, o pon **OVERDUB: SILENT** arriba: la muestra calla mientras cantas la capa nueva (sigue a tiempo), así el altavoz no se cuela en la grabación.",
             ],
           },
         },
@@ -6555,17 +6555,34 @@ registerProcessor("autotune", AutoTune);
         const now = c.currentTime,
           cnt = S.vx.count ? 3 : 0,
           beat = 0.55;
-        for (let k = 0; k < cnt; k++) pluck(c, c.destination, k === cnt - 1 ? 84 : 79, now + 0.05 + k * beat, 0.12, 0.16);
+        for (let k = 0; k < cnt; k++) vxClick(c, now + 0.05 + k * beat, k === cnt - 1);
         const start = now + 0.05 + cnt * beat;
         VX.chunks = [];
         VX.rec = { i, over, start, end: over ? start + s.raw.length / s.rate : start + 60 };
         VX.sel = i;
-        if (over) vxPlay(i, start, true);
+        if (over) {
+          await vxPlay(i, start, true);
+          // HEAR off: the sample plays in silence, so a phone's speaker doesn't leak it into its own microphone
+          const p = VX.play.get(i);
+          if (p && S.vx.mon === false) p.g.gain.value = 0;
+        }
         clearInterval(VX.iv);
         VX.iv = setInterval(() => VX.rec && ctx.currentTime > VX.rec.end + vxLat() + 0.15 && vxRecDone(), 100);
         vxFace();
         playFace();
         loop();
+      }
+      // the count-in: a 25 ms click (the last one higher), silent again in under a tenth of a second
+      function vxClick(c, t, last) {
+        const o = c.createOscillator(),
+          g = c.createGain();
+        o.frequency.value = last ? 1760 : 1320;
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(0.25, t + 0.002);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.025);
+        o.connect(g).connect(c.destination);
+        o.start(t);
+        o.stop(t + 0.04);
       }
       // tap the red pad: before the count ends it cancels, after it the take ends there (a layer always runs to the end)
       function vxRecStop() {
@@ -6810,7 +6827,9 @@ registerProcessor("autotune", AutoTune);
         $("#vxInfo").innerHTML = s
           ? `<i>PAD ${VX.sel + 1}${VX.busy ? " · APPLYING…" : ""}</i>${mmss(vxDur(s))}${s.fx.length ? " · " + s.fx.map((id) => VFX.find((f) => f[0] === id)[1]).join(", ") : ""}${s.pitch ? ` · ${s.pitch > 0 ? "+" : ""}${s.pitch} st` : ""}`
           : `<i>PAD ${VX.sel + 1}</i>EMPTY: TAP IT TO RECORD`;
-        $("#vxCount").innerHTML = `<i>COUNT-IN</i>${S.vx.count ? "3 BEEPS" : "OFF"}`;
+        $("#vxCount").innerHTML = `<i>COUNT-IN</i>${S.vx.count ? "3 CLICKS" : "OFF"}`;
+        $("#vxMon").innerHTML = `<i>OVERDUB</i>${S.vx.mon === false ? "SILENT" : "HEAR"}`;
+        $("#vxMon").classList.toggle("on", S.vx.mon !== false);
         $("#vxCount").classList.toggle("on", !!S.vx.count);
         $("#vxLoopB").innerHTML = `<i>THIS PAD</i>${s && s.loop ? "LOOPS" : "PLAYS ONCE"}`;
         $("#vxLoopB").classList.toggle("on", !!(s && s.loop));
@@ -6978,6 +6997,13 @@ registerProcessor("autotune", AutoTune);
         vxRecord(i);
       }
       $("#vxRec").onclick = vxRecBtn;
+      $("#vxMon").title = "While you record a layer: hear the sample (HEAR) or keep it silent (SILENT, for the phone's own speaker)";
+      $("#vxMon").onclick = () => {
+        S.vx.mon = S.vx.mon === false;
+        saveState();
+        vxFace();
+        toast(S.vx.mon ? "OVERDUB: you hear the sample while you record over it" : "OVERDUB: the sample keeps silent while you record over it (no echo from the speaker)");
+      };
       $("#vxCount").onclick = () => {
         S.vx.count = !S.vx.count;
         saveState();
