@@ -1323,6 +1323,41 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         user-select: text;
         -webkit-user-select: text;
       }
+      /* exercise editor */
+      #eRoll {
+        display: block;
+        width: 100%;
+        height: min(46dvh, 340px);
+        margin: 4px 0 6px;
+        border-radius: 8px;
+        background: var(--panel2);
+        border: 1px solid var(--line);
+        touch-action: none;
+      }
+      .eBar button {
+        flex: 1;
+        min-height: 40px;
+        font-size: 11px;
+      }
+      #cexList .cx {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        padding: 6px 0;
+        border-top: 1px solid var(--line);
+      }
+      #cexList .cx div {
+        flex: 1;
+        min-width: 0;
+      }
+      #cexList .cx b {
+        display: block;
+        font-size: 13px;
+      }
+      #cexList .cx small {
+        font: 600 10px var(--mono);
+        color: var(--dim);
+      }
       /* lyrics sheet (over the song view) */
       #sheet {
         position: fixed;
@@ -1438,7 +1473,7 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         </div>
         <div class="prow rib">
           <button id="wPlay"></button><button id="wListen"></button><button id="wDir"></button><button id="wCue"></button
-          ><button id="wNotes"></button><button id="wRange"></button>
+          ><button id="wNotes"></button><button id="wRange"></button><button id="wEdit"></button>
         </div>
       </section>
 
@@ -1583,6 +1618,17 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
             A video gives its sound: only the sound is kept (compressed), and SAVE on the song exports it as an audio
             file.
           </div>
+          <h3 style="margin-top: 12px">Your exercises</h3>
+          <div id="cexList"></div>
+          <div class="row">
+            <button id="cexNew" style="flex: 1">+ NEW</button><button id="cexExp" style="flex: 1">EXPORT</button><button id="cexImp" style="flex: 1">IMPORT</button>
+          </div>
+          <input type="file" id="cexFile" accept=".json,application/json" hidden />
+          <div class="hint">
+            Exercises you made in the warm-up editor (✎ on the warm-up bar). EXPORT saves them all in a .json file to
+            share or keep; IMPORT adds the ones in a file. An exercise sung by a sample keeps the pad's number, not its
+            sound: on another phone it uses that phone's pad, or the piano.
+          </div>
           <h3 style="margin-top: 12px">Storage</h3>
           <div class="hint" id="storeTxt">—</div>
         </div>
@@ -1597,6 +1643,13 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
           <div class="hint">
             Recordings are compressed (Opus or AAC, about 0.7 MB a minute). With BACKING on, a warm-up or a song
             take records the piano or the song together with your voice, like a performance; off records only you.
+          </div>
+          <h3 style="margin-top: 12px">MIDI device (experimental)</h3>
+          <div class="mrow"><button id="midiDev">CONNECT</button><button id="midiMap">ASSIGN</button><button id="midiClr">CLEAR</button></div>
+          <div class="hint">
+            A MIDI keyboard plays reference notes to sing to; in SAMPLER it plays the selected pad at the key's pitch;
+            in the exercise editor it writes or records the notes. <b>ASSIGN</b> ties pads, buttons and knobs to the
+            sampler pads, START of the warm-up and the plane, and the next exercise. Chrome, Edge or Firefox; not Safari.
           </div>
           <h3 style="margin-top: 12px">Pitch test</h3>
           <div class="row">
@@ -1651,6 +1704,25 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
       </div>
     </div>
     <!-- vocal reference: what it is, pick a file, or go back to the song's own melody -->
+    <!-- exercise editor: your own warm-up pattern, on a grid or from a MIDI keyboard -->
+    <div id="exEd" class="sheetBg" hidden>
+      <div class="card" role="dialog" aria-modal="true">
+        <div class="row"><input id="eName" type="text" maxlength="24" placeholder="Name, e.g. Ma-me-mi" /><button id="eClose">✕</button></div>
+        <canvas id="eRoll"></canvas>
+        <div class="row eBar">
+          <button id="ePlay">▶ PLAY</button><button id="eRec" class="rec">● MIDI</button><button id="eQ"></button><button id="eLen"></button>
+        </div>
+        <div class="row eBar">
+          <button id="eSnd"></button><button id="eClr">CLEAR</button><button id="eDel">DELETE</button><button id="eSave" class="on">SAVE</button>
+        </div>
+        <p class="hint" id="eHint" style="margin: 4px 0 0">
+          Tap the grid to place a note (tap it again to take it away): left to right is time, a column is half a beat,
+          and a note lasts until the next one (the last one, two beats at most). <b>R</b> is the key the exercise starts from on each round. With a MIDI
+          keyboard, the keys write at the cursor; <b>● MIDI</b> records what you play in time (QUANTIZE snaps it to
+          the grid). <b>SOUND</b> picks the piano or one of your sampler pads, retuned to every note.
+        </p>
+      </div>
+    </div>
     <div id="vref" class="sheetBg" hidden>
       <div class="card" role="dialog" aria-modal="true">
         <div class="row"><h3 style="flex: 1; margin: 0">Vocal reference</h3><button id="vrClose">✕</button></div>
@@ -1775,6 +1847,7 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         octFree: true, // pitch test ignores octave
         backing: true, // recordings of warm-ups and song takes include the piano / the song
         notes: true, // the piano plays the warm-up notes with you
+        cex: [], // your own exercises, made in the editor: the same shape as EXS
         wcue: "phrase", // before each key: "phrase" (the piano plays it all first), "chord" (the starting chord) or "off"
         song: null, // id of the open song
         at: { key: "-1", style: "nat", mon: 1 }, // autotune: key ("-1" every note, "0".."11" major, "m0".."m11" minor)
@@ -1791,7 +1864,7 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
       // the plane's cue used to be on / off
       if (typeof S.game.cue === "boolean") S.game.cue = S.game.cue ? "phrase" : "off";
       const CUES = ["phrase", "chord", "off"],
-        CUE_NAME = { phrase: "PHRASE CUE", chord: "CHORD CUE", off: "NO CUE" },
+        CUE_NAME = { phrase: "PHRASE", chord: "CHORD", off: "NO CUE" },
         CUE_TOAST = {
           phrase: "Phrase cue: the piano plays the whole exercise first, then you sing it",
           chord: "Chord cue: only the starting chord, then you sing",
@@ -1800,8 +1873,8 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         cueNext = (c) => CUES[(CUES.indexOf(c) + 1) % CUES.length];
       function saveState() {
         try {
-          const { view, voice, ex, bpm, updown, listen, key, tempo, octFree, backing, notes, wcue, song, at, range, kar, ranges, vx, game, gameBest } = S;
-          localStorage.setItem("sing.state", JSON.stringify({ view, voice, ex, bpm, updown, listen, key, tempo, octFree, backing, notes, wcue, song, at, range, kar, ranges, vx, game, gameBest }));
+          const { view, voice, ex, bpm, updown, listen, key, tempo, octFree, backing, notes, wcue, cex, song, at, range, kar, ranges, vx, game, gameBest } = S;
+          localStorage.setItem("sing.state", JSON.stringify({ view, voice, ex, bpm, updown, listen, key, tempo, octFree, backing, notes, wcue, cex, song, at, range, kar, ranges, vx, game, gameBest }));
         } catch {}
       }
       let dbP;
@@ -2417,6 +2490,10 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         { id: "nine", name: "9-note scale", hint: "ah, legato", n: [0, 2, 4, 5, 7, 9, 11, 12, 14, 12, 11, 9, 7, 5, 4, 2, 0], d: [...Array(16).fill(0.5), 1.5] },
         { id: "hum", name: "Hum and hold", hint: "mm · one steady note", n: [0], d: [4] },
       ];
+      // your own exercises follow the built-in ones
+      if (!Array.isArray(S.cex)) S.cex = [];
+      S.cex.forEach((e) => EXS.push(e));
+      const curEx = () => EXS.find((e) => e.id === S.ex) || EXS[1];
       const W = { on: false, t0: 0, plan: [], reps: [], out: null, voice: [], center: {}, timer: 0, end: 0 };
       // the whole session as a list of target segments { a, b, m0, m1, rep } (seconds from the start)
       function warmPlan() {
@@ -2515,7 +2592,39 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
           o.connect(g).connect(dest);
           o.start(a);
           o.stop(b + 0.05);
-        } else pluck(c, dest, p.m0, W.t0 + p.a, p.b - p.a + 0.1);
+        } else exNote(c, dest, p.m0, W.t0 + p.a, p.b - p.a + 0.1, curEx().smp);
+      }
+      // one note of an exercise: the piano, or the exercise's sampler pad played at that pitch
+      function exNote(c, dest, m, t, dur, smp) {
+        const s = smp != null && VX.s[smp];
+        if (!s) return pluck(c, dest, m, t, dur);
+        const src = c.createBufferSource(),
+          g = c.createGain();
+        src.buffer = vxBuf(s);
+        src.playbackRate.value = Math.pow(2, (m - smpBase(s)) / 12);
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime((s.vol ?? 1) * 0.9, t + 0.02);
+        g.gain.setTargetAtTime(0.0001, t + Math.max(0.05, dur - 0.05), 0.04);
+        src.connect(g).connect(dest);
+        src.start(t);
+        src.stop(t + dur + 0.3);
+      }
+      // a sample's own note: the pitch of its loudest stretch (C4 when it has none, like a drum)
+      function smpBase(s) {
+        if (s._bd === s.data) return s.base;
+        const d = s.data,
+          N = Math.min(2048, d.length);
+        let best = -1,
+          at = 0;
+        for (let i = 0; i + N <= d.length; i += N >> 1) {
+          let e = 0;
+          for (let k = i; k < i + N; k += 4) e += d[k] * d[k];
+          if (e > best) ((best = e), (at = i));
+        }
+        const r = detectPitch(d.subarray(at, at + N), s.rate);
+        s.base = r.hz > 0 ? 69 + 12 * Math.log2(r.hz / 440) : 60;
+        s._bd = s.data;
+        return s.base;
       }
       function warmStop() {
         if (!W.on) return;
@@ -2611,6 +2720,356 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         saveState();
       };
       $("#wBpm").onchange = () => W.on && (warmStop(), warmStart());
+
+      // ---- EXERCISE EDITOR: a monophonic pattern on a grid of half beats; a note lasts until the next one.
+      // Rows are semitones from the lowest note (R, the key of each round). Saved as { n, d } like the built-in ones.
+      const ED = { id: null, steps: [], len: 16, cur: 0, q: true, smp: null, raw: null, rec: null, base: null, play: null, at: -1 };
+      const E_LO = -5,
+        E_HI = 19,
+        E_DEG = ["R", "♭2", "2", "♭3", "3", "4", "♭5", "5", "♭6", "6", "♭7", "7"],
+        eDeg = (r) => (r === 0 ? "R" : r === 12 ? "8" : r === 24 ? "15" : (r > 12 ? "↑" : r < 0 ? "↓" : "") + E_DEG[((r % 12) + 12) % 12]);
+      function edOpen(ex) {
+        Object.assign(ED, { id: ex ? ex.id : null, cur: 0, raw: null, rec: null, base: null, at: -1, smp: ex ? (ex.smp ?? null) : null });
+        $("#eName").value = ex ? ex.name : "";
+        if (ex) edFromNd(ex.n, ex.d);
+        else ((ED.len = 16), (ED.steps = Array(16).fill(null)));
+        $("#exEd").hidden = false;
+        edFace();
+      }
+      function edClose() {
+        edStop();
+        if (ED.rec) edRec();
+        $("#exEd").hidden = true;
+      }
+      // { n, d } <-> the grid
+      function edFromNd(n, d) {
+        const total = d.reduce((a, b) => a + b, 0);
+        ED.len = Math.min(32, Math.max(8, Math.ceil(total * 2)));
+        ED.steps = Array(ED.len).fill(null);
+        let at = 0;
+        n.forEach((m, i) => {
+          const k = Math.round(at * 2);
+          if (k < ED.len) ED.steps[k] = m;
+          at += d[i];
+        });
+      }
+      function edToNd() {
+        if (ED.raw) return ED.raw;
+        const n = [],
+          d = [];
+        ED.steps.forEach((m) => {
+          if (m != null) (n.push(m), d.push(0.5));
+          else if (d.length) d[d.length - 1] += 0.5; // an empty step holds the note before it
+        });
+        if (!n.length) return null;
+        if (n.length > 1) d[d.length - 1] = Math.min(d[d.length - 1], 2); // the last note: two beats at most (one note alone: all of it)
+        const lo = Math.min(...n);
+        return { n: n.map((m) => m - lo), d };
+      }
+      function edFace() {
+        $("#eQ").textContent = ED.q ? "QUANTIZE ✓" : "QUANTIZE ✗";
+        $("#eQ").classList.toggle("on", ED.q);
+        $("#eLen").textContent = ED.len + " STEPS";
+        const s = ED.smp != null && VX.s[ED.smp];
+        $("#eSnd").textContent = s ? "SOUND: " + s.name : "SOUND: PIANO";
+        $("#eSnd").classList.toggle("on", !!s);
+        $("#eDel").disabled = !ED.id;
+        $("#eRec").classList.toggle("on", !!ED.rec);
+        $("#eRec").textContent = ED.rec ? "■ STOP" : "● MIDI";
+        $("#ePlay").textContent = ED.play ? "■ STOP" : "▶ PLAY";
+        edDraw();
+      }
+      function edDraw() {
+        const cv = $("#eRoll");
+        if (!cv.offsetParent) return;
+        const [g, w, h, d] = fitCanvas(cv),
+          L = 26 * d,
+          rows = E_HI - E_LO + 1,
+          rh = h / rows,
+          cw = (w - L) / ED.len,
+          Y = (r) => h - (r - E_LO + 1) * rh,
+          C = { acc: css("--acc"), dim: css("--dim"), line: css("--line"), text: css("--text"), hot: css("--hot"), panel: css("--panel") };
+        g.clearRect(0, 0, w, h);
+        g.font = `700 ${Math.min(10, rh * 0.62) * d}px ui-monospace, Menlo, monospace`;
+        g.textBaseline = "middle";
+        for (let r = E_LO; r <= E_HI; r++) {
+          const black = [1, 3, 6, 8, 10].includes(((r % 12) + 12) % 12);
+          g.fillStyle = r % 12 === 0 ? "rgba(255,255,255,.07)" : black ? "rgba(0,0,0,.18)" : "rgba(0,0,0,0)";
+          g.fillRect(L, Y(r), w - L, rh);
+          if (r % 12 === 0 || [4, 7, 16, 19].includes(r) || r === E_LO) {
+            g.fillStyle = r % 12 === 0 ? C.acc : C.dim;
+            g.fillText(eDeg(r), 3 * d, Y(r) + rh / 2);
+          }
+        }
+        for (let k = 0; k <= ED.len; k++) {
+          g.fillStyle = C.line;
+          g.globalAlpha = k % 2 ? 0.35 : 0.9;
+          g.fillRect(L + k * cw, 0, 1, h);
+        }
+        g.globalAlpha = 1;
+        // the cursor (where a MIDI key writes) and the step playing
+        g.strokeStyle = C.text;
+        g.lineWidth = d;
+        g.strokeRect(L + ED.cur * cw + 1, 1, cw - 2, h - 2);
+        if (ED.at >= 0) {
+          g.fillStyle = C.acc;
+          g.globalAlpha = 0.18;
+          g.fillRect(L + ED.at * cw, 0, cw, h);
+          g.globalAlpha = 1;
+        }
+        // notes: a solid head, a fainter tail while it holds
+        let last = null;
+        const notes = ED.steps.filter((m) => m != null).length,
+          lastK = ED.steps.reduce((a, m, k) => (m != null ? k : a), -1);
+        ED.steps.forEach((m, k) => {
+          if (notes > 1 && k >= lastK + 4) return; // the last note holds two beats at most
+          if (m != null) {
+            last = m;
+            g.fillStyle = C.acc;
+            g.beginPath();
+            g.roundRect(L + k * cw + 1.5 * d, Y(m) + 1, cw - 3 * d, rh - 2, 3 * d);
+            g.fill();
+          } else if (last != null) {
+            g.fillStyle = C.acc;
+            g.globalAlpha = 0.35;
+            g.fillRect(L + k * cw - 2 * d, Y(last) + rh * 0.3, cw + 1 * d, rh * 0.4);
+            g.globalAlpha = 1;
+          }
+        });
+        if (ED.raw) {
+          g.fillStyle = C.hot;
+          g.fillText("free timing (not on the grid)", L + 6 * d, 10 * d);
+        }
+      }
+      const edRoot = () => VOICES[S.voice][1] + 5;
+      $("#eRoll").addEventListener("pointerdown", (e) => {
+        const cv = $("#eRoll"),
+          r = cv.getBoundingClientRect(),
+          L = 26,
+          col = Math.floor(((e.clientX - r.left - L) / (r.width - L)) * ED.len),
+          row = E_HI - Math.floor(((e.clientY - r.top) / r.height) * (E_HI - E_LO + 1));
+        if (col < 0 || col >= ED.len) return;
+        ED.raw = null;
+        if (ED.steps[col] === row) ED.steps[col] = null;
+        else {
+          ED.steps[col] = row;
+          getCtx().then((c) => exNote(c, c.destination, edRoot() + row, c.currentTime + 0.01, 0.35, ED.smp));
+        }
+        ED.cur = Math.min(ED.len - 1, col + 1);
+        edFace();
+      });
+      // ▶: the pattern once, from the voice's comfortable low key
+      function edPlay() {
+        if (ED.play) return edStop();
+        const nd = edToNd();
+        if (!nd) return toast("Place some notes first");
+        getCtx().then((c) => {
+          const beat = 60 / S.bpm,
+            t0 = c.currentTime + 0.08;
+          let t = 0;
+          nd.n.forEach((m, i) => (exNote(c, c.destination, edRoot() + m, t0 + t * beat, nd.d[i] * beat * 0.97, ED.smp), (t += nd.d[i])));
+          const t1 = performance.now();
+          ED.play = setInterval(() => {
+            const b = (performance.now() - t1) / 1000 / beat - 0.08 / beat;
+            ED.at = b >= t ? -1 : Math.floor(b * 2);
+            if (b >= t) return edStop();
+            edDraw();
+          }, 40);
+          edFace();
+        });
+      }
+      function edStop() {
+        clearInterval(ED.play);
+        ED.play = null;
+        ED.at = -1;
+        edFace();
+      }
+      // ● MIDI: what you play, in time (a soft click on every beat); stopping writes it in
+      function edRec() {
+        if (ED.rec) {
+          clearInterval(ED.rec.click);
+          const ev = ED.rec.ev,
+            beat = 60000 / S.bpm;
+          ED.rec = null;
+          if (ev.length) {
+            const lo = Math.min(...ev.map((x) => x.m)),
+              n = [],
+              d = [];
+            ev.forEach((x, i) => {
+              const end = ev[i + 1] ? ev[i + 1].t : x.off || x.t + beat;
+              let b = (end - x.t) / beat;
+              b = ED.q ? Math.max(0.5, Math.round(b * 2) / 2) : Math.max(0.1, Math.round(b * 100) / 100);
+              n.push(x.m - lo);
+              d.push(b);
+            });
+            edFromNd(n, d);
+            ED.raw = ED.q ? null : { n, d };
+            toast(n.length + " notes recorded");
+          }
+          return edFace();
+        }
+        if (!MI.names.length) return toast("Connect a MIDI keyboard in Files → OPTIONS, or tap the grid");
+        edStop();
+        ED.rec = { ev: [], click: 0 };
+        getCtx().then((c) => {
+          if (!ED.rec) return;
+          ED.rec.click = setInterval(() => pluck(c, c.destination, 96, c.currentTime + 0.01, 0.05, 0.05), 60000 / S.bpm);
+        });
+        toast("Recording: play the pattern on the keyboard, then ■ STOP");
+        edFace();
+      }
+      // a MIDI key in the editor: recorded, or written at the cursor (the first key sets where R is)
+      function edMidi(n, on) {
+        if (ED.rec) {
+          const ev = ED.rec.ev;
+          if (on) ev.push({ m: n, t: performance.now() });
+          else {
+            const x = ev.findLast((y) => y.m === n && !y.off);
+            if (x) x.off = performance.now();
+          }
+          return;
+        }
+        if (!on) return;
+        if (ED.base == null) {
+          const first = ED.steps.find((m) => m != null);
+          ED.base = n - (first ?? 0);
+        }
+        const row = Math.max(E_LO, Math.min(E_HI, n - ED.base));
+        ED.raw = null;
+        ED.steps[ED.cur] = row;
+        ED.cur = (ED.cur + 1) % ED.len;
+        edFace();
+      }
+      function edSave() {
+        const nd = edToNd();
+        if (!nd) return toast("Place some notes first");
+        const id = ED.id || "u" + Date.now().toString(36),
+          name = $("#eName").value.trim() || "My exercise " + (S.cex.length + 1),
+          sm = ED.smp != null && VX.s[ED.smp],
+          ex = {
+            id,
+            name,
+            hint: "yours · " + nd.n.map((m) => eDeg(m).replace("R", "1")).join("-") + (sm ? " · " + sm.name.toLowerCase() : ""),
+            n: nd.n,
+            d: nd.d,
+            custom: true,
+            smp: sm ? ED.smp : null,
+          };
+        const i = S.cex.findIndex((x) => x.id === id),
+          j = EXS.findIndex((x) => x.id === id);
+        if (i >= 0) S.cex[i] = ex;
+        else S.cex.push(ex);
+        if (j >= 0) EXS[j] = ex;
+        else EXS.push(ex);
+        S.ex = id;
+        saveState();
+        edClose();
+        renderWarm();
+        ribFace();
+        cexRender();
+        toast("Saved: " + name + " is with the exercises");
+      }
+      function cexDelete(id) {
+        S.cex = S.cex.filter((x) => x.id !== id);
+        const j = EXS.findIndex((x) => x.id === id);
+        if (j >= 0) EXS.splice(j, 1);
+        if (S.ex === id) S.ex = "five";
+        if (S.game.ex === id) S.game.ex = "five";
+        saveState();
+        renderWarm();
+        ribFace();
+        cexRender();
+      }
+      $("#wEdit").onclick = () => edOpen(curEx().custom ? curEx() : null);
+      $("#eClose").onclick = edClose;
+      $("#ePlay").onclick = edPlay;
+      $("#eRec").onclick = edRec;
+      $("#eSave").onclick = edSave;
+      $("#eQ").onclick = () => ((ED.q = !ED.q), edFace());
+      $("#eLen").onclick = () => {
+        const L = [8, 12, 16, 24, 32],
+          n = L[(L.indexOf(ED.len) + 1) % L.length];
+        ED.steps = Array.from({ length: n }, (_, k) => ED.steps[k] ?? null);
+        ED.len = n;
+        ED.cur = Math.min(ED.cur, n - 1);
+        ED.raw = null;
+        edFace();
+      };
+      $("#eSnd").onclick = () => {
+        const pads = VX.s.map((x, i) => (x ? i : -1)).filter((i) => i >= 0),
+          opts = [null, ...pads];
+        ED.smp = opts[(opts.indexOf(ED.smp) + 1) % opts.length];
+        if (!pads.length) toast("Record a sample in SAMPLER to sing the exercise with your own voice");
+        edFace();
+      };
+      $("#eClr").onclick = () => ((ED.steps = Array(ED.len).fill(null)), (ED.raw = null), (ED.cur = 0), (ED.base = null), edFace());
+      $("#eDel").onclick = (e) => {
+        const b = e.currentTarget;
+        if (!ED.id) return;
+        if (!b.classList.contains("arm")) {
+          b.classList.add("arm", "rec");
+          b.textContent = "SURE?";
+          return setTimeout(() => (b.classList.remove("arm", "rec"), (b.textContent = "DELETE")), 2500);
+        }
+        const id = ED.id;
+        edClose();
+        cexDelete(id);
+        toast("Exercise deleted");
+      };
+      // ---- your exercises in Files
+      function cexRender() {
+        const box = $("#cexList");
+        if (!box) return;
+        box.innerHTML = S.cex.length
+          ? S.cex.map((x) => `<div class="cx"><div><b>${esc(x.name)}</b><small>${esc(x.hint)}</small></div><button data-cxe="${x.id}">✎</button><button data-cxd="${x.id}">✕</button></div>`).join("")
+          : `<div class="hint">None yet: ✎ NEW on the warm-up bar makes one.</div>`;
+      }
+      cexRender();
+      $("#cexList").onclick = (e) => {
+        const ed = e.target.closest("[data-cxe]"),
+          del = e.target.closest("[data-cxd]");
+        if (ed) {
+          S.ex = ed.dataset.cxe;
+          edOpen(curEx());
+        }
+        if (del) {
+          if (!del.classList.contains("arm")) {
+            del.classList.add("arm", "rec");
+            return setTimeout(() => del.classList.remove("arm", "rec"), 2500);
+          }
+          cexDelete(del.dataset.cxd);
+        }
+      };
+      $("#cexNew").onclick = () => edOpen(null);
+      $("#cexExp").onclick = () => {
+        if (!S.cex.length) return toast("No exercises of your own yet");
+        download(new Blob([JSON.stringify({ app: "sing-pocket", exercises: S.cex }, null, 1)], { type: "application/json" }), "sing-exercises.json");
+      };
+      $("#cexImp").onclick = () => $("#cexFile").click();
+      $("#cexFile").onchange = async (e) => {
+        const f = e.target.files[0];
+        e.target.value = "";
+        if (!f) return;
+        try {
+          const j = JSON.parse(await f.text()),
+            list = (Array.isArray(j) ? j : j.exercises || []).filter(
+              (x) => x && Array.isArray(x.n) && Array.isArray(x.d) && x.n.length && x.n.length === x.d.length && [...x.n, ...x.d].every((v) => typeof v === "number" && isFinite(v)),
+            );
+          if (!list.length) return toast("No exercises in this file");
+          list.forEach((x, k) => {
+            const ex = { id: "u" + Date.now().toString(36) + k, name: String(x.name || "Imported").slice(0, 24), hint: String(x.hint || "yours").slice(0, 60), n: x.n, d: x.d.map((v) => Math.max(0.1, v)), custom: true, smp: Number.isInteger(x.smp) && x.smp >= 0 && x.smp < 16 ? x.smp : null };
+            S.cex.push(ex);
+            EXS.push(ex);
+          });
+          saveState();
+          renderWarm();
+          cexRender();
+          toast(list.length + " exercises imported");
+        } catch {
+          toast("Could not read this file");
+        }
+      };
+
 
       // ======================================================================
       // song engine: decode, time stretch (WSOLA) for key and tempo, reference melody, lyrics
@@ -3982,6 +4441,7 @@ registerProcessor("autotune", AutoTune);
       const warmFace = playFace;
       const IC = (p) => `<svg class="ic" viewBox="0 0 24 24">${p}</svg>`;
       const ICONS = {
+        exed: IC('<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13 7l4 4"/>'),
         play: IC('<path d="M7 5l12 7-12 7z"/>'),
         stop: IC('<rect x="6" y="6" width="12" height="12" rx="1"/>'),
         mic: IC('<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>'),
@@ -4009,6 +4469,7 @@ registerProcessor("autotune", AutoTune);
         rib("wCue", "cue", CUE_NAME[S.wcue] || CUE_NAME.phrase, S.wcue !== "off");
         rib("wNotes", "piano", S.notes === false ? "NO PIANO" : "PIANO", S.notes !== false);
         rib("wRange", "range", "RANGE", S.voice === "mine");
+        rib("wEdit", "exed", curEx().custom ? "EDIT" : "NEW", false);
         karFace();
         rib("sOpen", "open", "OPEN");
         rib("sA", "a", SONG.buf && SONG.A > 0 ? mmss(SONG.A) : "SET A");
@@ -4531,11 +4992,12 @@ registerProcessor("autotune", AutoTune);
             en: [
               "Pick your **voice type** at the top, then tap an **exercise pad**: it starts at once. Each exercise begins near the bottom of your range and moves up a semitone at a time (and back down with **UP + DOWN**).",
               "@pitch",
-              "- **The cue** before each key: with **PHRASE CUE** the piano plays the whole exercise first while you listen (**♪ LISTEN**), then a beat to breathe, then you sing it back. **CHORD CUE** plays only the starting chord, **NO CUE** goes straight on. Changing it starts the exercise again.",
+              "- **The cue** before each key: with **PHRASE** the piano plays the whole exercise first while you listen (**♪ LISTEN**), then a beat to breathe, then you sing it back. **CHORD** plays only the starting chord, **NO CUE** goes straight on. Changing it starts the exercise again.",
               "- **The lane** scrolls from right to left. The blue bars are the notes to sing; your voice is the line, **green** within 50 cents, **orange** close, **red** off. The corner shows the note and how far you are (▼ flat, ▲ sharp).",
               "- **The chips** under the lane are the keys of the exercise. Each one is coloured by how much of it you sang in tune.",
               "- **TEMPO** sets the speed. **LISTEN** turns the microphone on or off, **PIANO / NO PIANO** chooses whether the piano also plays the notes while you sing them (it works while the exercise plays).",
               "- **●** records the warm-up: your voice and the piano, saved in Files.",
+              "- **NEW / EDIT** (✎) opens the **exercise editor**: tap notes on a grid (a column is half a beat, R is the key of each round), or write them from a MIDI keyboard, or play them in with **● MIDI** (QUANTIZE puts them on the grid). **SOUND** sings it with the piano or with one of your sampler pads, retuned to every note. SAVE adds it to the exercise pads, here and in the plane; Files lists, exports and imports your exercises.",
               "## The exercises",
               "- **Lip trill**, **Siren** and **Hum**: gentle, start with these.",
               "- **5-note scale**, **Arpeggio**, **9-note scale**: agility and range, on any vowel.",
@@ -4547,11 +5009,12 @@ registerProcessor("autotune", AutoTune);
             es: [
               "Elige tu **tipo de voz** arriba y toca un **pad de ejercicio**: empieza al momento. Cada ejercicio comienza cerca de lo más grave de tu registro y sube de semitono en semitono (y vuelve a bajar con **UP + DOWN**).",
               "@pitch",
-              "- **La pista** antes de cada tono: con **PHRASE CUE** el piano toca el ejercicio entero primero mientras escuchas (**♪ LISTEN**), luego un pulso para respirar, y entonces lo cantas. **CHORD CUE** toca solo el acorde inicial, **NO CUE** sigue directo. Cambiarla empieza el ejercicio de nuevo.",
+              "- **La pista** antes de cada tono: con **PHRASE** el piano toca el ejercicio entero primero mientras escuchas (**♪ LISTEN**), luego un pulso para respirar, y entonces lo cantas. **CHORD** toca solo el acorde inicial, **NO CUE** sigue directo. Cambiarla empieza el ejercicio de nuevo.",
               "- **El carril** se desplaza de derecha a izquierda. Las barras azules son las notas que hay que cantar; tu voz es la línea, **verde** a menos de 50 cents, **naranja** cerca, **roja** fuera. La esquina muestra la nota y cuánto te desvías (▼ bajo, ▲ alto).",
               "- **Las fichas** bajo el carril son los tonos del ejercicio. Cada una se colorea según cuánto cantaste afinado.",
               "- **TEMPO** fija la velocidad. **LISTEN** enciende o apaga el micrófono, **PIANO / NO PIANO** elige si el piano también toca las notas mientras las cantas (funciona mientras suena el ejercicio).",
               "- **●** graba el calentamiento: tu voz y el piano, guardados en Archivos.",
+              "- **NEW / EDIT** (✎) abre el **editor de ejercicios**: toca notas en una rejilla (una columna es medio pulso, R es el tono de cada ronda), o escríbelas desde un teclado MIDI, o tócalas en directo con **● MIDI** (QUANTIZE las pone en la rejilla). **SOUND** lo canta con el piano o con uno de tus pads del sampler, afinado a cada nota. SAVE lo añade a los pads de ejercicios, aquí y en el avión; Archivos lista, exporta e importa tus ejercicios.",
               "## Los ejercicios",
               "- **Lip trill** (vibración de labios), **Siren** (sirena) y **Hum** (boca cerrada): suaves, empieza por ellos.",
               "- **Escala de 5 notas**, **Arpegio**, **Escala de 9 notas**: agilidad y registro, con cualquier vocal.",
@@ -4699,7 +5162,7 @@ registerProcessor("autotune", AutoTune);
               "- **The tuner** behind the hoops: **NEXT** is the note of the next hoop, **YOU** the note you sing, and the meter under them shows how far you are, with the hoop's width in green. A note away or more, it tells you to go **HIGHER** or **LOWER**.",
               "- **LEVEL**: **EASY** has wide hoops, forgives the octave and gives the plane a hand towards the hoop; **MEDIUM**, a semitone either way, octave-free; **HARD**, a quarter tone, in the right octave, faster and longer.",
               "- **The pads** under the sky (or **FLIGHT** at the top) pick which exercise the hoops draw: the same ones as the warm-ups (scales, arpeggios, octave jumps, sirens…).",
-              "- **The cue** before each round: **PHRASE CUE**, like a vocal exercise, the piano plays the whole phrase while the plane flies on with no hoops (**♪ LISTEN**), then a beat to breathe, and then you sing it back through the hoops. **CHORD CUE** plays only the starting chord. **NO CUE** goes straight from round to round, for when you know it by heart (the default on Hard).",
+              "- **The cue** before each round: **PHRASE**, like a vocal exercise, the piano plays the whole phrase while the plane flies on with no hoops (**♪ LISTEN**), then a beat to breathe, and then you sing it back through the hoops. **CHORD** plays only the starting chord. **NO CUE** goes straight from round to round, for when you know it by heart (the default on Hard).",
               "- The score grows with each hoop in a row. The dashed line is the height of the next hoop, the dotted trail your flight. The voice in use (the button with its name opens **Range**) sets the height of the sky.",
               "Every flight goes to **History**, with your best score for each level.",
             ],
@@ -4710,7 +5173,7 @@ registerProcessor("autotune", AutoTune);
               "- **El afinador** detrás de los aros: **NEXT** es la nota del próximo aro, **YOU** la nota que cantas, y la barra de debajo muestra lo lejos que estás, con el ancho del aro en verde. A una nota o más, te dice que vayas más alto (**HIGHER**) o más bajo (**LOWER**).",
               "- **LEVEL**: **EASY** tiene aros anchos, perdona la octava y ayuda al avión hacia el aro; **MEDIUM**, un semitono arriba o abajo, sin importar la octava; **HARD**, un cuarto de tono, en la octava correcta, más rápido y más largo.",
               "- **Los pads** bajo el cielo (o **FLIGHT** arriba) eligen qué ejercicio dibujan los aros: los mismos que en los calentamientos (escalas, arpegios, saltos de octava, sirenas…).",
-              "- **La pista** antes de cada ronda: **PHRASE CUE**, como en un ejercicio vocal, el piano toca la frase entera mientras el avión sigue sin aros (**♪ LISTEN**, escucha), luego un pulso para respirar, y entonces la cantas a través de los aros. **CHORD CUE** toca solo el acorde inicial. **NO CUE** pasa directo de ronda a ronda, para cuando te la sabes de memoria (por defecto en Hard).",
+              "- **La pista** antes de cada ronda: **PHRASE**, como en un ejercicio vocal, el piano toca la frase entera mientras el avión sigue sin aros (**♪ LISTEN**, escucha), luego un pulso para respirar, y entonces la cantas a través de los aros. **CHORD** toca solo el acorde inicial. **NO CUE** pasa directo de ronda a ronda, para cuando te la sabes de memoria (por defecto en Hard).",
               "- La puntuación crece con cada aro seguido. La línea discontinua es la altura del siguiente aro, el rastro punteado tu vuelo. La voz en uso (el botón con su nombre abre **Rango**) fija la altura del cielo.",
               "Cada vuelo va al **Historial**, con tu mejor puntuación en cada nivel.",
             ],
@@ -6606,6 +7069,231 @@ registerProcessor("autotune", AutoTune);
         toast("Saved in Files, with its effects");
       };
 
+      // ---- MIDI
+      const MI_KEY = "sing.midi";
+      // ---------------------------------------------------------------------------------------------
+      // MIDI IN (experimental, from the "midi" branch): keyboards and pad controllers through Web MIDI (Chrome, Edge,
+      // Firefox; not Safari or iPhone). The same block in TRACK, TUNE and SING.
+      // - Notes and knobs nobody assigned go to the app: MI.on(note, velocity, channel), MI.off(note), MI.cc(cc, value).
+      // - MI.actions() lists what can be assigned: { id, group, name, kind: "tap" | "hold" | "knob", run }.
+      //   MI.map ties a control to one: "n<channel>:<note>" or "c<channel>:<cc>" -> action id (kept in localStorage).
+      //   An assigned control does that and nothing else (a pad assigned to an effect does not also play a note).
+      // - ASSIGN walks through the actions one by one: press the control for each. On the keyboard (channel 1)
+      //   C skips, E goes back, A exits; pads usually send on channel 10, so they never steer by mistake.
+      // ---------------------------------------------------------------------------------------------
+      const MI = { acc: null, names: [], held: new Map(), on: null, off: null, cc: null, actions: () => [], map: {}, learn: null, down: new Map() };
+      try {
+        MI.map = JSON.parse(localStorage.getItem(MI_KEY + ".map") || "{}");
+      } catch {}
+      const miSave = () => localStorage.setItem(MI_KEY + ".map", JSON.stringify(MI.map));
+      if (/index_midi\.html$/.test(location.pathname)) document.title += " · MIDI dev";
+      async function midiConnect(quiet) {
+        if (!navigator.requestMIDIAccess) {
+          if (!quiet) toast("No MIDI in this browser: try Chrome, Edge or Firefox (not Safari)");
+          return midiFace();
+        }
+        try {
+          MI.acc = MI.acc || (await navigator.requestMIDIAccess());
+        } catch {
+          if (!quiet) toast("MIDI was not allowed");
+          return midiFace();
+        }
+        localStorage.setItem(MI_KEY, "1");
+        MI.acc.onstatechange = midiBind;
+        midiBind();
+        if (!quiet) toast(MI.names.length ? "MIDI: " + MI.names.join(", ") : "MIDI is on: plug in a keyboard or pad controller");
+      }
+      function midiBind() {
+        MI.names = [];
+        MI.acc.inputs.forEach((i) => {
+          i.onmidimessage = midiMsg;
+          if (i.state !== "disconnected") MI.names.push(i.name);
+        });
+        midiFace();
+      }
+      function midiMsg(e) {
+        const [st, a, b] = e.data,
+          cmd = st & 0xf0,
+          ch = st & 15,
+          on = cmd === 0x90 && b > 0,
+          off = cmd === 0x80 || (cmd === 0x90 && b === 0),
+          cc = cmd === 0xb0;
+        if (!on && !off && !cc) return;
+        const key = (cc ? "c" : "n") + ch + ":" + a;
+        if (MI.learn) return on || (cc && b > 0) ? miLearnMsg(key, cc, ch, a) : undefined;
+        const act = MI.map[key] && MI.actions().find((x) => x.id === MI.map[key]);
+        if (act) return miRun(act, key, cc, on, b);
+        if (cc) return MI.cc && MI.cc(a, b, ch);
+        if (on) {
+          MI.held.set(a, b);
+          if (MI.on) MI.on(a, b, ch);
+        } else {
+          MI.held.delete(a);
+          if (MI.off) MI.off(a, ch);
+        }
+      }
+      function miRun(act, key, cc, on, v) {
+        if (act.kind === "knob") return cc ? act.run(v / 127) : on && act.run(v / 127); // a pad on a knob: its velocity
+        const press = cc ? v >= 64 : on; // pads in CC mode send 127 / 0
+        if (press === !!MI.down.get(key)) return;
+        MI.down.set(key, press);
+        if (act.kind === "hold") act.run(press);
+        else if (press) act.run();
+      }
+      // ---- ASSIGN
+      const MI_NN = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+      const miKeyName = (k) => {
+        const [, t, ch, n] = k.match(/^([nc])(\d+):(\d+)$/);
+        return t === "n" ? `${MI_NN[n % 12]}${Math.floor(n / 12) - 1} · ch ${+ch + 1}` : `knob ${n} · ch ${+ch + 1}`;
+      };
+      function midiAssign() {
+        if (!MI.names.length) return toast("Connect a MIDI device first");
+        MI.learn = { i: 0, t: 0 };
+        miLearnFace();
+      }
+      function miLearnMsg(key, cc, ch, num) {
+        const L = MI.learn;
+        if (performance.now() - L.t < 450) return; // a knob sends many values: one control per step
+        if (!cc && ch === 0) {
+          const pc = num % 12;
+          if (pc === 0) return miStep(1);
+          if (pc === 4) return miStep(-1);
+          if (pc === 9) return midiAssignEnd();
+        }
+        const a = MI.actions()[L.i];
+        for (const k in MI.map) if (MI.map[k] === a.id) delete MI.map[k]; // one control per action
+        MI.map[key] = a.id; // and one action per control
+        miSave();
+        miStep(1);
+      }
+      function miStep(d) {
+        const acts = MI.actions(),
+          L = MI.learn;
+        if (d === "group") {
+          const g = acts[L.i].group;
+          while (L.i < acts.length && acts[L.i].group === g) L.i++;
+        } else L.i += d;
+        L.i = Math.max(0, L.i);
+        L.t = performance.now();
+        if (L.i >= acts.length) return midiAssignEnd();
+        miLearnFace();
+      }
+      function midiAssignEnd() {
+        MI.learn = null;
+        const el = document.getElementById("miLearn");
+        if (el) el.remove();
+        toast(Object.keys(MI.map).length + " MIDI controls assigned");
+        midiFace();
+      }
+      function midiClearMap() {
+        MI.map = {};
+        miSave();
+        midiFace();
+        toast("MIDI assignments cleared: the pads and knobs play notes again");
+      }
+      function miLearnFace() {
+        let el = document.getElementById("miLearn");
+        if (!el) {
+          el = document.createElement("div");
+          el.id = "miLearn";
+          document.body.appendChild(el);
+          el.onclick = (e) => {
+            const b = e.target.closest("[data-ml]");
+            if (!b) return;
+            const k = b.dataset.ml;
+            if (k === "skip") miStep(1);
+            else if (k === "back") miStep(-1);
+            else if (k === "group") miStep("group");
+            else if (k === "clear") {
+              const id = MI.actions()[MI.learn.i].id;
+              for (const x in MI.map) if (MI.map[x] === id) delete MI.map[x];
+              miSave();
+              miLearnFace();
+            } else midiAssignEnd();
+          };
+        }
+        const acts = MI.actions(),
+          a = acts[MI.learn.i],
+          cur = Object.keys(MI.map).filter((k) => MI.map[k] === a.id),
+          how = a.kind === "knob" ? "Turn the knob or move the slider for" : a.kind === "hold" ? "Press the pad or key (it works while held) for" : "Press the pad, key or button for";
+        el.innerHTML = `<div class="mlBox"><i>MIDI ASSIGN · ${MI.learn.i + 1} / ${acts.length} · ${a.group}</i><p>${how}</p><h2>${a.name}</h2><p class="mlCur">${cur.length ? "Now: " + cur.map(miKeyName).join(", ") : "Not assigned"}</p><div class="mlB"><button data-ml="back">◀ BACK</button><button data-ml="skip">SKIP ▶</button><button data-ml="group">SKIP ${a.group.toUpperCase()} ▶▶</button><button data-ml="clear">CLEAR</button><button data-ml="done" class="on">DONE</button></div><p class="mlKeys">On the keyboard: C skips · E goes back · A exits</p></div>`;
+      }
+      {
+        const st = document.createElement("style");
+        st.textContent = `#miLearn{position:fixed;inset:0;z-index:95;background:rgba(0,0,0,.62);display:flex;align-items:center;justify-content:center;padding:16px}
+#miLearn .mlBox{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:12px;padding:16px;width:min(380px,100%);text-align:center}
+#miLearn i{display:block;font:800 10px var(--mono,monospace);letter-spacing:.08em;color:var(--dim);font-style:normal}
+#miLearn h2{margin:4px 0 10px;font:900 22px var(--mono,monospace);color:var(--acc)}
+#miLearn p{margin:10px 0 0;font:600 12px var(--mono,monospace);color:var(--dim)}
+#miLearn .mlCur{color:var(--text)}
+#miLearn .mlB{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+#miLearn .mlB button{flex:1 1 30%;min-height:40px;font:800 11px var(--mono,monospace)}
+.mrow,#midiBar{display:flex;gap:6px}.mrow{flex:3}.mrow button,#midiBar>button{flex:1;min-height:38px}`;
+        document.head.appendChild(st);
+      }
+      // the buttons in OPTIONS (#midiDev, #midiMap, #midiClr)
+      function midiFace() {
+        const b = document.getElementById("midiDev"),
+          m = document.getElementById("midiMap"),
+          c = document.getElementById("midiClr"),
+          n = Object.keys(MI.map).length;
+        if (b) {
+          b.textContent = MI.names.length ? "MIDI: " + MI.names.join(", ") : MI.acc ? "NO DEVICE PLUGGED IN" : "CONNECT";
+          b.classList.toggle("on", !!MI.names.length);
+        }
+        if (m) m.textContent = n ? `ASSIGN · ${n}` : "ASSIGN";
+        if (c) c.disabled = !n;
+      }
+      [
+        ["midiDev", () => midiConnect()],
+        ["midiMap", midiAssign],
+        ["midiClr", midiClearMap],
+      ].forEach(([id, f]) => {
+        const b = document.getElementById(id);
+        if (b) b.onclick = f;
+      });
+      midiFace();
+      // on the next visit, reconnect by itself when the browser already allows it (no question asked)
+      if (localStorage.getItem(MI_KEY) && navigator.permissions)
+        navigator.permissions
+          .query({ name: "midi" })
+          .then((p) => p.state === "granted" && midiConnect(true))
+          .catch(() => {});
+      MI.actions = () => [
+        { id: "warm", group: "Practice", name: "WARM-UP START / STOP", kind: "tap", run: () => $("#wPlay").click() },
+        { id: "next", group: "Practice", name: "NEXT EXERCISE", kind: "tap", run: () => midiNextEx() },
+        { id: "plane", group: "Practice", name: "PLANE START / STOP", kind: "tap", run: () => $("#gPlay").click() },
+        { id: "vxall", group: "Sampler", name: "SAMPLER: STOP ALL", kind: "tap", run: () => vxStopAll() },
+        ...Array.from({ length: 16 }, (_, i) => ({ id: "vx" + i, group: "Sampler", name: "SAMPLE PAD " + (i + 1), kind: "tap", run: () => midiPad(i) })),
+      ];
+      function midiNextEx() {
+        const i = EXS.findIndex((e) => e.id === S.ex);
+        S.ex = EXS[(i + 1) % EXS.length].id;
+        saveState();
+        renderWarm();
+        ribFace();
+        toast(curEx().name);
+      }
+      // a pad: plays its sample; a looping one that plays stops
+      function midiPad(i) {
+        if (!VX.s[i]) return;
+        if (VX.play.has(i) && VX.s[i].loop) return (vxStop(i), vxFace(), playFace());
+        vxPlay(i);
+      }
+      // the keys: in the editor they write; in SAMPLER they play the selected pad at their pitch; elsewhere a
+      // reference note on the piano, to sing to
+      MI.on = (n, v) => {
+        if (!$("#exEd").hidden) return edMidi(n, true);
+        getCtx().then((c) => {
+          const t = c.currentTime + 0.005;
+          if (S.view === "vox" && VX.s[VX.sel]) {
+            vxGraph(c);
+            exNote(c, VX.bus, n, t, vxDur(VX.s[VX.sel]) / Math.pow(2, (n - smpBase(VX.s[VX.sel])) / 12), VX.sel);
+          } else pluck(c, c.destination, n, t, 1.2, 0.08 + (v / 127) * 0.18);
+        });
+      };
+      MI.off = (n) => !$("#exEd").hidden && edMidi(n, false);
+
       // ---- PLANE: fly a paper plane through hoops by singing their notes. A warm-up exercise in disguise
       const GLV = {
         easy: { name: "EASY", tol: 1.5, assist: 0.45, fold: true, bpm: 66, rounds: 3, hint: "wide hoops, octave-free, a hand on the stick" },
@@ -6734,7 +7422,7 @@ registerProcessor("autotune", AutoTune);
           (G.cues || []).forEach((q) => {
             if (q.done || q.t - now > 0.2) return;
             q.done = 1;
-            pluck(ctx, ctx.destination, Math.round(q.m), ctx.currentTime + Math.max(0, q.t - now), Math.min(q.len, 0.9), 0.2);
+            exNote(ctx, ctx.destination, Math.round(q.m), ctx.currentTime + Math.max(0, q.t - now), Math.min(q.len, 0.9), gEx().smp);
           });
           if (now > G.end + 0.6) gameStop(true);
         }
