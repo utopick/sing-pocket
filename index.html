@@ -1787,7 +1787,7 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         clearTimeout(e._t);
         e._t = setTimeout(() => e.classList.remove("show"), ms);
       }
-      const esc = (x) => String(x ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
+      const esc = (x) => String(x ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
       const PAL = ["124,242,154", "255,179,71", "106,183,255", "255,111,165", "197,139,255", "77,224,208"];
       const PC = (i) => {
         const t = css("--chc")
