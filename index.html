@@ -974,7 +974,11 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         min-height: 150px;
       }
       #aiLane {
-        min-height: 110px;
+        min-height: 90px;
+      }
+      #aiWvLane {
+        min-height: 70px;
+        flex: none;
       }
       #air .rgNote,
       #air .rgRes,
@@ -1589,6 +1593,7 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         <div class="prow">
           <div class="dd inf"><span id="aiNow"></span></div>
         </div>
+        <div class="lane" id="aiWvLane" title="The sound you sang, coloured like the trace below: clean, mixed or airy"><canvas id="aiWv"></canvas></div>
         <div class="lane" id="aiLane"><canvas id="aiCv"></canvas></div>
         <div class="rgNote"><b id="aiNote">—</b><i><b id="aiBar"></b></i></div>
         <div class="rgRes" id="aiRes"></div>
@@ -5410,7 +5415,7 @@ registerProcessor("autotune", AutoTune);
           b: {
             en: [
               "A clean tone has its energy in the **harmonics**; a breathy one has noise between them. This view listens for that noise and tells you how much of what you sang was **clean**, **mixed** or **airy**. It is for choosing your sound, and for finding the first step towards **mix voice**: a mix that is supported has little air in it.",
-              "- **START** (or **▶**), then sing a note or a phrase. The **trace** shows clean tone low and breath high, about the last 8 seconds. The big word is the tone now.",
+              "- **START** (or **▶**), then sing a note or a phrase. The **waveform** on top shows your sound, each slice in the colour of what it was (clean, mixed or airy, as named on the trace below it): the last 8 seconds while you sing, and the whole take when you stop, so you can see where the air came in. The **trace** shows clean tone low and breath high. The big word is the tone now.",
               "- **STOP**: the result is the share of the voiced time that was clean, mixed and airy, kept with the date. The next one is compared with the one before.",
               "- Close to the microphone and in a quiet room: noise in the room counts as air. Vibrato smears the harmonics and can read as a little air.",
               "- The **throat diagram** is a side view of the mouth (the lips are on the right): the **tongue** (in colour), the **soft palate**, the **larynx** and the air. Tap a shape to see where each part goes: **hum / ng**, **nay** (twang), **oo**, **ah** and the **yawn**. Try a shape, sing, and watch the trace.",
@@ -5418,7 +5423,7 @@ registerProcessor("autotune", AutoTune);
             ],
             es: [
               "Un tono limpio tiene su energía en los **armónicos**; uno con aire tiene ruido entre ellos. Esta vista escucha ese ruido y te dice qué parte de lo que cantaste fue **limpia**, **mixta** o **con aire**. Sirve para elegir tu sonido y como primer paso hacia la **voz mixta**: una mixta bien apoyada lleva poco aire.",
-              "- **START** (o **▶**), y canta una nota o una frase. La **traza** muestra el tono limpio abajo y el aire arriba, unos 8 segundos. La palabra grande es el tono de ahora.",
+              "- **START** (o **▶**), y canta una nota o una frase. La **forma de onda** de arriba muestra tu sonido, cada trozo del color de lo que fue (limpio, mixto o con aire, como se nombran en la traza de abajo): los últimos 8 segundos mientras cantas, y toda la toma al parar, para ver dónde entró el aire. La **traza** muestra el tono limpio abajo y el aire arriba. La palabra grande es el tono de ahora.",
               "- **STOP**: el resultado es la parte del tiempo con voz que fue limpia, mixta y con aire, guardada con la fecha. El siguiente se compara con el anterior.",
               "- Cerca del micrófono y en una sala tranquila: el ruido de la sala cuenta como aire. El vibrato difumina los armónicos y puede leerse como un poco de aire.",
               "- El **diagrama de la garganta** es una vista lateral de la boca (los labios están a la derecha): la **lengua** (en color), el **paladar blando**, la **laringe** y el aire. Toca una forma para ver dónde va cada parte: **hum / ng**, **nay** (twang), **oo**, **ah** y el **bostezo**. Prueba una forma, canta y mira la traza.",
@@ -8325,7 +8330,7 @@ registerProcessor("autotune", AutoTune);
       // ---- AIR: how much of the voice is clean tone and how much is breath. A clean voice has silence between its harmonics;
       // breath fills that gap with noise. So, for every 50 ms: the level of the gaps (halfway between the harmonics) against
       // the level of the harmonics themselves, in dB. It does not depend on the volume or the microphone.
-      const AIR = { on: false, iv: 0, tr: [], fr: [], fft: null, sm: 0.8, sh: 1 };
+      const AIR = { on: false, iv: 0, tr: [], fr: [], wv: [], fft: null, sm: 0.8, sh: 1 };
       const AIR_CLEAN = -24, AIR_MIX = -15; // shortcut: limits set from synthetic voices, tune them with real singers if the labels feel off
       function airDb(fft, hz, sr) {
         const bw = sr / (2 * fft.length),
@@ -8358,6 +8363,7 @@ registerProcessor("autotune", AutoTune);
         AIR.fft = new Float32Array(MIC.an.frequencyBinCount);
         AIR.tr = [];
         AIR.fr = [];
+        AIR.wv = [];
         AIR.on = true;
         $("#aiRes").innerHTML = "";
         clearInterval(AIR.iv);
@@ -8391,6 +8397,10 @@ registerProcessor("autotune", AutoTune);
           MIC.an.getFloatFrequencyData(AIR.fft);
           db = airDb(AIR.fft, hz, ctx.sampleRate);
         }
+        let pk = 0;
+        for (let i = MIC.buf.length - 2400; i < MIC.buf.length; i++) pk = Math.max(pk, Math.abs(MIC.buf[i]));
+        AIR.wv.push({ a: pk, c: db === db ? airClass(db) : -1 }); // the loudness of this slice and what it was
+        if (AIR.wv.length > 6000) AIR.wv.shift();
         AIR.tr.push(db);
         if (AIR.tr.length > 160) AIR.tr.shift();
         if (db === db) AIR.fr.push(db);
@@ -8406,7 +8416,39 @@ registerProcessor("autotune", AutoTune);
         airDraw();
       }
       // the trace: the last 8 s; low is clean, high is breath
+      // the waveform: one bar per slice of sound, coloured by what it was; while singing the last 8 s, then the whole take
+      function airWave() {
+        const cv = $("#aiWv");
+        if (!cv.offsetParent) return;
+        const [g, w, h, d] = fitCanvas(cv),
+          C = [css("--ok"), css("--acc"), css("--acc2")],
+          N = 160,
+          src = AIR.on ? AIR.wv.slice(-N) : AIR.wv,
+          per = Math.max(1, src.length / N),
+          gain = AIR.on ? 2.5 : 0.95 / Math.max(0.02, ...src.map((x) => x.a));
+        g.clearRect(0, 0, w, h);
+        g.globalAlpha = 0.25;
+        g.fillStyle = css("--dim");
+        g.fillRect(0, h / 2, w, d);
+        g.globalAlpha = 1;
+        const bw = w / N;
+        for (let x = 0; x < N; x++) {
+          const i0 = Math.floor(x * per),
+            col = src.slice(i0, Math.max(i0 + 1, Math.floor((x + 1) * per))),
+            k = [0, 0, 0];
+          if (!col.length) continue;
+          col.forEach((f) => f.c >= 0 && k[f.c]++);
+          const c = k.some((n) => n) ? k.indexOf(Math.max(...k)) : -1,
+            a = clamp(Math.max(...col.map((f) => f.a)) * gain, 0.02, 1),
+            xx = AIR.on ? (N - Math.min(N, src.length) + x) * bw : x * bw;
+          g.fillStyle = c < 0 ? css("--dim") : C[c];
+          g.globalAlpha = c < 0 ? 0.35 : 0.95;
+          g.fillRect(xx, (h * (1 - a)) / 2, Math.max(1, bw - d), h * a);
+        }
+        g.globalAlpha = 1;
+      }
       function airDraw() {
+        airWave();
         const cv = $("#aiCv");
         if (!cv.offsetParent) return;
         const [g, w, h, d] = fitCanvas(cv),
