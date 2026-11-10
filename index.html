@@ -1869,6 +1869,18 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         game: { lvl: "easy", ex: "five", cue: "phrase" }, // plane: level, the exercise the hoops follow, the cue before each round (as wcue)
         gameBest: {}, // plane: best score per level
       };
+      // Safety net: an error while the page starts is most often a damaged or old saved setting. Once per session, the
+      // settings are kept aside (as sing.state.bad) and the app starts with its defaults, instead of failing on every launch.
+      addEventListener("load", () => (window.__up = 1));
+      addEventListener("error", () => {
+        if (window.__up || sessionStorage.getItem("sing.reset")) return;
+        sessionStorage.setItem("sing.reset", "1");
+        try {
+          localStorage.setItem("sing.state.bad", localStorage.getItem("sing.state") || "");
+          localStorage.removeItem("sing.state");
+        } catch {}
+        location.reload();
+      });
       try {
         Object.assign(S, JSON.parse(localStorage.getItem("sing.state") || "{}"));
       } catch {}
@@ -3064,9 +3076,10 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         try {
           const j = JSON.parse(await f.text()),
             list = (Array.isArray(j) ? j : j.exercises || []).filter(
-              (x) => x && Array.isArray(x.n) && Array.isArray(x.d) && x.n.length && x.n.length === x.d.length && [...x.n, ...x.d].every((v) => typeof v === "number" && isFinite(v)),
+              (x) => x && Array.isArray(x.n) && Array.isArray(x.d) && x.n.length && x.n.length <= 400 && x.n.length === x.d.length && [...x.n, ...x.d].every((v) => typeof v === "number" && isFinite(v)),
             );
           if (!list.length) return toast("No exercises in this file");
+          list.splice(100);
           list.forEach((x, k) => {
             const ex = { id: "u" + Date.now().toString(36) + k, name: String(x.name || "Imported").slice(0, 24), hint: String(x.hint || "yours").slice(0, 60), n: x.n, d: x.d.map((v) => Math.max(0.1, v)), custom: true, smp: Number.isInteger(x.smp) && x.smp >= 0 && x.smp < 16 ? x.smp : null };
             S.cex.push(ex);
@@ -7290,7 +7303,7 @@ registerProcessor("autotune", AutoTune);
         };
         // Only replace report rows: clock updates must not detach buttons mid-click.
         el.querySelector("ul").innerHTML = miTestRows()
-          .map(([a, b]) => `<li class="${a === "✔" ? "ok" : a === "i" ? "inf" : ""}"><b>${a}</b>${b}</li>`)
+          .map(([a, b]) => `<li class="${a === "✔" ? "ok" : a === "i" ? "inf" : ""}"><b>${a}</b>${String(b).replace(/[&<>"']/g, (c) => "&#" + c.charCodeAt(0) + ";")}</li>`)
           .join("");
       }
       function miRun(act, key, cc, on, v) {
