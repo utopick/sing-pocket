@@ -3,3 +3,7 @@
 # signing keys never go in the repository
 *.jks
 *.keystore
+
+# test environment
+.venv/
+__pycache__/

@@ -1816,25 +1816,7 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
       };
       // semitone distance folded into -6..+6 (octave-free comparison)
       const fold = (d) => ((((d + 6) % 12) + 12) % 12) - 6;
-      // In the Android app the WebView ignores <a download>: write to the app cache and open the share sheet.
       async function download(blob, name) {
-        const cap = window.Capacitor,
-          P = cap && cap.isNativePlatform && cap.isNativePlatform() && cap.Plugins;
-        if (P && P.Filesystem && P.Share) {
-          try {
-            const data = await new Promise((ok, bad) => {
-              const r = new FileReader();
-              r.onload = () => ok(String(r.result).split(",")[1]);
-              r.onerror = () => bad(r.error);
-              r.readAsDataURL(blob);
-            });
-            const { uri } = await P.Filesystem.writeFile({ path: name, data, directory: "CACHE" });
-            await P.Share.share({ title: name, files: [uri] });
-          } catch (e) {
-            if (!/cancel/i.test((e && e.message) || "")) toast("Could not export " + name);
-          }
-          return;
-        }
         const a = document.createElement("a");
         a.href = URL.createObjectURL(blob);
         a.download = name;
@@ -1987,11 +1969,8 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         MIC.stream = MIC.src = MIC.an = null;
       }
       function micError(code) {
-        const app = !!window.Capacitor;
         const m = {
-          NotAllowedError: app
-            ? "Microphone blocked. Allow it in Android Settings → Apps → SING.Pocket → Permissions → Microphone."
-            : "Microphone blocked. Allow it in the browser's site settings and reload.",
+          NotAllowedError: "Microphone blocked. Allow it in the browser's site settings and reload.",
           NotFoundError: "No microphone found.",
           NotReadableError: "The microphone is busy in another app.",
           NO_API: location.protocol === "http:" ? "The microphone needs https (or localhost)." : "This browser has no microphone support.",
@@ -4992,7 +4971,7 @@ registerProcessor("autotune", AutoTune);
               "- **▶** plays and stops what the view plays: the warm-up, the song, live autotune, every Sampler pad, a flight of the plane, or the measure in Range.",
               "- The **Autotune** button (the steps) glows while live autotune is on, whatever view you are in.",
               "## Microphone and headphones",
-              "The first time the app listens, the phone asks for permission to use the microphone. In the Android app, if you refused it, allow it in *Settings → Apps → SING.Pocket → Permissions → Microphone*.",
+              "The first time the app listens, the phone asks for permission to use the microphone. If you refused it, allow the microphone in the browser's site settings (the icon next to the address) and reload.",
               "**Use headphones** when you sing along with a song: otherwise the microphone hears the song too, and the pitch test mixes it up with your voice.",
             ],
             es: [
@@ -5004,7 +4983,7 @@ registerProcessor("autotune", AutoTune);
               "- **▶** reproduce y para lo que suena en la vista: el calentamiento, la canción, el autotune en directo, todos los pads del Sampler, un vuelo del avión, o la medida en Rango.",
               "- El botón del **Autotune** (los escalones) brilla mientras el autotune en directo está activo, estés en la vista que estés.",
               "## Micrófono y auriculares",
-              "La primera vez que la app escucha, el teléfono pide permiso para usar el micrófono. En la app de Android, si lo rechazaste, actívalo en *Ajustes → Aplicaciones → SING.Pocket → Permisos → Micrófono*.",
+              "La primera vez que la app escucha, el teléfono pide permiso para usar el micrófono. Si lo rechazaste, permite el micrófono en los ajustes del sitio del navegador (el icono junto a la dirección) y recarga.",
               "**Usa auriculares** cuando cantes con una canción: si no, el micrófono también oye la canción y la prueba de afinación la confunde con tu voz.",
             ],
           },
@@ -5230,7 +5209,7 @@ registerProcessor("autotune", AutoTune);
             en: [
               "The last view (the disk) lists your **songs** and your **recordings**, newest first.",
               "- **OPEN** reopens a song in the Song view, **SAVE** exports its audio (for a video, the sound taken from it). **✕** deletes, after a second tap.",
-              "- **▶** plays a recording, **TUNE** opens it in the Autotune view, **SAVE** exports it as a compressed audio file (in the Android app, through the share sheet: save it to Files, Drive, or send it). **Tap a name to rename it.** Song recordings show their pitch score.",
+              "- **▶** plays a recording, **TUNE** opens it in the Autotune view, **SAVE** exports it as a compressed audio file. **Tap a name to rename it.** Song recordings show their pitch score.",
               "- **●** in this view records a **free session**: sing anything.",
               "## The bottom bar",
               "- **FILES**: open a song, **import** a recording (any audio file), and how much space the app uses.",
@@ -5242,7 +5221,7 @@ registerProcessor("autotune", AutoTune);
             es: [
               "La última vista (el disco) lista tus **canciones** y tus **grabaciones**, las más recientes primero.",
               "- **OPEN** vuelve a abrir una canción en la vista Canción, **SAVE** exporta su audio (de un vídeo, el sonido extraído). **✕** borra, tras un segundo toque.",
-              "- **▶** reproduce una grabación, **TUNE** la abre en la vista Autotune, **SAVE** la exporta como archivo de audio comprimido (en la app de Android, con el menú de compartir: guárdala en Archivos, Drive, o envíala). **Toca un nombre para cambiarlo.** Las grabaciones de canción muestran su nota de afinación.",
+              "- **▶** reproduce una grabación, **TUNE** la abre en la vista Autotune, **SAVE** la exporta como archivo de audio comprimido. **Toca un nombre para cambiarlo.** Las grabaciones de canción muestran su nota de afinación.",
               "- **●** en esta vista graba una **sesión libre**: canta lo que quieras.",
               "## La barra inferior",
               "- **FILES**: abrir una canción, **importar** una grabación (cualquier archivo de audio), y cuánto espacio usa la app.",
