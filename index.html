@@ -1645,7 +1645,7 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
             take records the piano or the song together with your voice, like a performance; off records only you.
           </div>
           <h3 style="margin-top: 12px">MIDI device (experimental)</h3>
-          <div class="mrow"><button id="midiDev">CONNECT</button><button id="midiMap">ASSIGN</button><button id="midiClr">CLEAR</button><button id="midiTest" title="See what your device sends">TEST</button></div>
+          <div class="mrow"><button id="midiDev">CONNECT</button><button id="midiMap">ASSIGN</button><button id="midiClr">CLEAR</button><button id="midiTest" title="See what your device sends">TEST</button><button id="midiView" title="Live device diagram and assignments">DEVICE</button></div>
           <div class="hint">
             A MIDI keyboard plays reference notes to sing to; in SAMPLER it plays the selected pad at the key's pitch;
             in the exercise editor it writes or records the notes. <b>ASSIGN</b> ties pads, buttons and knobs to the
@@ -1761,6 +1761,7 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
     </div>
     <div id="toast"></div>
 
+    <script src="midi-device.js"></script>
     <script>
       "use strict";
       // ======================================================================
@@ -7111,6 +7112,7 @@ registerProcessor("autotune", AutoTune);
       //   a report with the first messages, to share in an issue or to replay in a test.
       // ---------------------------------------------------------------------------------------------
       const MI = { acc: null, names: [], held: new Map(), on: null, off: null, cc: null, actions: () => [], map: {}, learn: null, down: new Map(), sus: false, susd: new Set(), test: null };
+      const midiPanel = createMidiPanel(MI, miRun, (data, from) => midiMsg({ data }, from));
       try {
         MI.map = JSON.parse(localStorage.getItem(MI_KEY + ".map") || "{}");
       } catch {}
@@ -7141,6 +7143,7 @@ registerProcessor("autotune", AutoTune);
         midiFace();
       }
       function midiMsg(e, from) {
+        midiPanel.observe(e.data, from);
         if (MI.test) miTestMsg(e.data, from);
         const [st, a, b] = e.data,
           cmd = st & 0xf0,
@@ -7151,6 +7154,7 @@ registerProcessor("autotune", AutoTune);
         if (!on && !off && !cc) return;
         const key = (cc ? "c" : "n") + ch + ":" + a;
         if (MI.learn) return on || (cc && b > 0) ? miLearnMsg(key, cc, ch, a) : undefined;
+        if (midiPanel.route(from, key, cc, on, b)) return;
         const act = MI.map[key] && MI.actions().find((x) => x.id === MI.map[key]);
         if (act) return miRun(act, key, cc, on, b);
         if (cc && a === 64) {
@@ -7379,7 +7383,7 @@ registerProcessor("autotune", AutoTune);
 #miLearn li{display:flex;gap:8px;padding:5px 0;border-top:1px solid var(--line)}
 #miLearn li b{width:14px;flex:none;text-align:center}
 #miLearn li.ok{color:var(--text)}#miLearn li.ok b{color:var(--acc)}#miLearn li.inf{font-weight:500;font-style:italic}
-.mrow,#midiBar{display:flex;gap:6px}.mrow{flex:3}.mrow button,#midiBar>button{flex:1;min-height:38px}`;
+.mrow,#midiBar{display:flex;gap:6px}.mrow{flex:3;flex-wrap:wrap}.mrow button,#midiBar>button{flex:1 1 68px;min-height:38px}`;
         document.head.appendChild(st);
       }
       // the buttons in OPTIONS (#midiDev, #midiMap, #midiClr)
@@ -7396,12 +7400,15 @@ registerProcessor("autotune", AutoTune);
         if (c) c.disabled = !n;
         const t = document.getElementById("midiTest");
         if (t) t.disabled = !MI.names.length;
+        const v = document.getElementById("midiView");
+        if (v) v.disabled = !MI.names.length;
       }
       [
         ["midiDev", () => midiConnect()],
         ["midiMap", midiAssign],
         ["midiClr", midiClearMap],
         ["midiTest", midiTest],
+        ["midiView", () => midiPanel.open()],
       ].forEach(([id, f]) => {
         const b = document.getElementById(id);
         if (b) b.onclick = f;
