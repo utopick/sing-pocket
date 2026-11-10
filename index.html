@@ -16,7 +16,7 @@
 
   Storage
     localStorage  sing.theme, sing.lang, sing.welcome, sing.state { view, voice, ex, bpm, updown, listen, key,
-                  tempo, octFree, backing, notes, song, at, range, ranges, kar, vx, game, gameBest }
+                  tempo, octFree, backing, notes, song, at, range, ranges, airs, kar, vx, game, gameBest }
                   sing.log      the practice history [{ d, k, s, sc, n }]
     IndexedDB     "sing-pocket": songs { id, name, artist, title, blob, lyrics, lyrOff, ref, refHop, guide }
                                  takes { id, kind, name, date, blob, mime, dur, song, key, tempo, pitch, score, segs }
@@ -973,6 +973,49 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
       #atLane {
         min-height: 150px;
       }
+      #aiLane {
+        min-height: 110px;
+      }
+      #air .rgNote,
+      #air .rgRes,
+      #air .hint {
+        flex: none;
+      }
+      #air .hint {
+        padding: 0 4px;
+        min-height: 3.6em;
+      }
+      #aiSvg {
+        flex: 1 1 0;
+        min-height: 120px;
+        width: 100%;
+      }
+      #aiSvg path,
+      #aiSvg rect {
+        fill: none;
+        stroke: var(--text);
+        stroke-width: 1.4;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      #aiSvg .tg {
+        stroke: var(--acc);
+        stroke-width: 2.2;
+      }
+      #aiSvg .fl {
+        stroke: var(--acc2);
+        stroke-dasharray: 3 3;
+        stroke-width: 1.6;
+      }
+      #aiSvg .ft {
+        stroke: var(--dim);
+        stroke-width: 0.8;
+        stroke-dasharray: 1 2;
+      }
+      #aiSvg text {
+        fill: var(--dim);
+        font: 700 6.5px var(--mono);
+      }
       #at .hint {
         flex: none;
         padding: 0 4px;
@@ -1448,6 +1491,8 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
           <svg class="ic" viewBox="0 0 24 24"><path d="M9 18V5l11-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="17" cy="16" r="3" /></svg></button
         ><button data-v="range" title="Range finder">
           <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v18M8 7l4-4 4 4M8 17l4 4 4-4" /><path d="M4 12h3M17 12h3" /></svg></button
+        ><button data-v="air" title="Air: how clean or breathy your tone is, and the mouth and throat shapes">
+          <svg class="ic" viewBox="0 0 24 24"><path d="M3 9h10a3 3 0 1 0-3-3M3 14h14a3 3 0 1 1-3 3M3 19h6" /></svg></button
         ><button data-v="at" title="Autotune: live, and tuned copies of recordings">
           <svg class="ic" viewBox="0 0 24 24"><path d="M3 17h4v-4h4V9h4v4h6" /><circle cx="19" cy="6" r="2" /></svg></button
         ><button data-v="vox" title="Sampler: vocal samples">
@@ -1537,6 +1582,20 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         <div class="prow rib">
           <button id="rgGo"></button><button id="rgMine"></button><button id="rgType"></button><button id="rgWarm"></button><button id="rgGame"></button>
         </div>
+      </section>
+
+      <!-- AIR: the share of clean and breathy tone, live and as a summary; the mouth and throat shapes beside it -->
+      <section id="air">
+        <div class="prow">
+          <div class="dd inf"><span id="aiNow"></span></div>
+        </div>
+        <div class="lane" id="aiLane"><canvas id="aiCv"></canvas></div>
+        <div class="rgNote"><b id="aiNote">—</b><i><b id="aiBar"></b></i></div>
+        <div class="rgRes" id="aiRes"></div>
+        <svg id="aiSvg" viewBox="0 0 200 200" role="img" aria-label="Side view of the mouth and throat"></svg>
+        <div class="hint" id="aiTip"></div>
+        <div class="prow rib" id="aiShapes"></div>
+        <div class="prow rib"><button id="aiGo"></button></div>
       </section>
 
       <!-- AUTOTUNE: the key and style, LIVE through headphones with its trace, and tuned copies of recordings -->
@@ -2095,6 +2154,7 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         range: null, // [low, high] MIDI from the range finder
         kar: false, // karaoke: the song's centre (the voice) taken out
         ranges: [], // the range measures, [{ d, lo, hi }], the last 12
+        airs: [], // the air measures, [{ d, c, m, a }] percent of clean, mixed and airy tone, the last 12
         vx: { count: true, mon: true }, // vox: a count-in before recording; mon = hear the sample while recording a layer over it
         game: { lvl: "easy", ex: "five", cue: "phrase" }, // plane: level, the exercise the hoops follow, the cue before each round (as wcue)
         gameBest: {}, // plane: best score per level
@@ -2126,8 +2186,8 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         cueNext = (c) => CUES[(CUES.indexOf(c) + 1) % CUES.length];
       function saveState() {
         try {
-          const { view, voice, ex, bpm, updown, listen, key, tempo, octFree, backing, notes, wcue, cex, song, at, range, kar, ranges, vx, game, gameBest } = S;
-          localStorage.setItem("sing.state", JSON.stringify({ view, voice, ex, bpm, updown, listen, key, tempo, octFree, backing, notes, wcue, cex, song, at, range, kar, ranges, vx, game, gameBest }));
+          const { view, voice, ex, bpm, updown, listen, key, tempo, octFree, backing, notes, wcue, cex, song, at, range, kar, ranges, airs, vx, game, gameBest } = S;
+          localStorage.setItem("sing.state", JSON.stringify({ view, voice, ex, bpm, updown, listen, key, tempo, octFree, backing, notes, wcue, cex, song, at, range, kar, ranges, airs, vx, game, gameBest }));
         } catch {}
       }
       let dbP;
@@ -4625,7 +4685,7 @@ registerProcessor("autotune", AutoTune);
       // ======================================================================
       // views, header, ribbons, the frame loop
       // ======================================================================
-      const WM = { warm: "WARM-UP", song: "SONG", range: "RANGE", at: "AUTOTUNE", vox: "SAMPLER", game: "PLANE", prog: "HISTORY", takes: "FILES" };
+      const WM = { warm: "WARM-UP", song: "SONG", range: "RANGE", air: "AIR", at: "AUTOTUNE", vox: "SAMPLER", game: "PLANE", prog: "HISTORY", takes: "FILES" };
       function showView(v) {
         if (!WM[v]) v = "warm";
         const prev = S.view;
@@ -5206,7 +5266,7 @@ registerProcessor("autotune", AutoTune);
       // help manual (EN / ES), same format as TRACK.Pocket: "## " heading, "- " list item, **bold**, *dim*
       // ======================================================================
       // The version of the app: change it here (and add its notes to the last help section, "What's new").
-      const APP_VERSION = "1.3.0";
+      const APP_VERSION = "1.4.0";
       const HELP = [
         {
           id: "start",
@@ -5341,6 +5401,28 @@ registerProcessor("autotune", AutoTune);
               "- El **gráfico**: una columna por tipo de voz (Bajo, Barítono, Tenor, Contralto, Mezzo, Soprano), **YOU** (tú) en tu color, y tus medidas anteriores con su fecha. El marco discontinuo es la voz en uso. Mientras cantas, una línea muestra tu nota.",
               "- **USE MINE** añade **Yours** (la tuya) a la lista de voces y ajusta cada ejercicio exactamente a tus notas. **USE** (con el tipo) elige el tipo de voz más cercano. **VOICE IN USE** arriba la cambia a mano.",
               "Vuelve a medirlo cada pocas semanas: la práctica lo amplía, e **Historial** guarda cada medida.",
+            ],
+          },
+        },
+        {
+          id: "air",
+          t: { en: "Air", es: "Aire" },
+          b: {
+            en: [
+              "A clean tone has its energy in the **harmonics**; a breathy one has noise between them. This view listens for that noise and tells you how much of what you sang was **clean**, **mixed** or **airy**. It is for choosing your sound, and for finding the first step towards **mix voice**: a mix that is supported has little air in it.",
+              "- **START** (or **▶**), then sing a note or a phrase. The **trace** shows clean tone low and breath high, about the last 8 seconds. The big word is the tone now.",
+              "- **STOP**: the result is the share of the voiced time that was clean, mixed and airy, kept with the date. The next one is compared with the one before.",
+              "- Close to the microphone and in a quiet room: noise in the room counts as air. Vibrato smears the harmonics and can read as a little air.",
+              "- The **throat diagram** is a side view of the mouth (the lips are on the right): the **tongue** (in colour), the **soft palate**, the **larynx** and the air. Tap a shape to see where each part goes: **hum / ng**, **nay** (twang), **oo**, **ah** and the **yawn**. Try a shape, sing, and watch the trace.",
+              "It measures tone, not singing: a mix voice has no single sound that a microphone can tell, so use the numbers as a guide, together with your ear.",
+            ],
+            es: [
+              "Un tono limpio tiene su energía en los **armónicos**; uno con aire tiene ruido entre ellos. Esta vista escucha ese ruido y te dice qué parte de lo que cantaste fue **limpia**, **mixta** o **con aire**. Sirve para elegir tu sonido y como primer paso hacia la **voz mixta**: una mixta bien apoyada lleva poco aire.",
+              "- **START** (o **▶**), y canta una nota o una frase. La **traza** muestra el tono limpio abajo y el aire arriba, unos 8 segundos. La palabra grande es el tono de ahora.",
+              "- **STOP**: el resultado es la parte del tiempo con voz que fue limpia, mixta y con aire, guardada con la fecha. El siguiente se compara con el anterior.",
+              "- Cerca del micrófono y en una sala tranquila: el ruido de la sala cuenta como aire. El vibrato difumina los armónicos y puede leerse como un poco de aire.",
+              "- El **diagrama de la garganta** es una vista lateral de la boca (los labios están a la derecha): la **lengua** (en color), el **paladar blando**, la **laringe** y el aire. Toca una forma para ver dónde va cada parte: **hum / ng**, **nay** (twang), **oo**, **ah** y el **bostezo**. Prueba una forma, canta y mira la traza.",
+              "Mide el tono, no el canto: la voz mixta no tiene un sonido único que un micrófono distinga, así que usa los números como guía, junto con tu oído.",
             ],
           },
         },
@@ -5505,6 +5587,8 @@ registerProcessor("autotune", AutoTune);
             t: { en: "What's new", es: "Novedades" },
             b: {
               en: [
+                "## Version 1.4.0",
+                "- **Air:** a new view (the wind icon) that listens to your tone and says how much of it is clean, mixed or airy, live and as a result you can compare over time, with a side-view diagram of the tongue, soft palate and larynx for five mouth shapes (hum, nay, oo, ah, yawn).",
                 "## Version 1.3.0",
                 "- **Install it:** the app is now a web app (PWA). Add it to the Home Screen (iPhone: Safari ▸ Share; Android and desktop: Chrome ▸ Install app) and it opens like an app and works offline. The Android APK is retired.",
                 "- **Exercises:** an imported exercise file is limited to 400 notes per exercise and 100 exercises.",
@@ -5513,6 +5597,8 @@ registerProcessor("autotune", AutoTune);
                 "Older versions: see *Releases* on GitHub.",
               ],
               es: [
+                "## Versión 1.4.0",
+                "- **Aire:** una vista nueva (el icono del viento) que escucha tu tono y dice qué parte es limpia, mixta o con aire, en directo y como resultado que puedes comparar con el tiempo, con un diagrama lateral de la lengua, el paladar blando y la laringe para cinco formas de la boca (hum, nay, oo, ah, bostezo).",
                 "## Versión 1.3.0",
                 "- **Instálala:** la app ahora es una web app (PWA). Añádela a la pantalla de inicio (iPhone: Safari ▸ Compartir; Android y escritorio: Chrome ▸ Instalar app) y se abre como una app y funciona sin conexión. El APK de Android se retira.",
                 "- **Ejercicios:** un archivo de ejercicios importado se limita a 400 notas por ejercicio y 100 ejercicios.",
@@ -6244,7 +6330,7 @@ registerProcessor("autotune", AutoTune);
         copy: IC('<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V4H4v12h4"/>'),
       });
       const LINE = (g, x0, y0, x1, y1) => (g.beginPath(), g.moveTo(x0, y0), g.lineTo(x1, y1), g.stroke());
-      const micFree = () => !W.on && !P.on && !RG.on && !G.on && !VX.rec && !(AT && AT.live) && micStop();
+      const micFree = () => !W.on && !P.on && !RG.on && !AIR.on && !G.on && !VX.rec && !(AT && AT.live) && micStop();
 
       // ---- RANGE: hold the lowest comfortable note, then the highest; the chart puts it next to every voice type
       const RG = { on: false, step: 0, lo: 0, hi: 0, iv: 0, run: [], anchor: NaN, m: NaN, done: false };
@@ -8235,15 +8321,199 @@ registerProcessor("autotune", AutoTune);
             .join("") || '<div class="hint">Measure your range (the arrows view) to keep it here.</div>';
       }
 
+
+      // ---- AIR: how much of the voice is clean tone and how much is breath. A clean voice has silence between its harmonics;
+      // breath fills that gap with noise. So, for every 50 ms: the level of the gaps (halfway between the harmonics) against
+      // the level of the harmonics themselves, in dB. It does not depend on the volume or the microphone.
+      const AIR = { on: false, iv: 0, tr: [], fr: [], fft: null, sm: 0.8, sh: 1 };
+      const AIR_CLEAN = -24, AIR_MIX = -15; // shortcut: limits set from synthetic voices, tune them with real singers if the labels feel off
+      function airDb(fft, hz, sr) {
+        const bw = sr / (2 * fft.length),
+          P = (i) => Math.pow(10, fft[i] / 10);
+        let pk = 0,
+          vl = 0,
+          n = 0;
+        for (let k = 1; k * hz < 3000; k++) {
+          if (k * hz < 300) continue; // the lowest harmonics swim with vibrato; the gaps above 300 Hz are what breath fills
+          const c = Math.round((k * hz) / bw),
+            v = Math.round(((k + 0.5) * hz) / bw);
+          let mp = 0,
+            mv = Infinity;
+          for (let i = c - 2; i <= c + 2; i++) mp = Math.max(mp, P(i));
+          for (let i = v - 1; i <= v + 1; i++) mv = Math.min(mv, P(i));
+          pk += mp;
+          vl += mv;
+          n++;
+        }
+        return n ? 10 * Math.log10(Math.max(vl, 1e-20) / pk) : NaN;
+      }
+      const airClass = (db) => (db < AIR_CLEAN ? 0 : db < AIR_MIX ? 1 : 2); // clean, mixed, airy
+      const AIR_NAME = ["CLEAN", "MIXED", "AIRY"];
+      async function airStart() {
+        warmStop();
+        songStop();
+        if (!(await micStart())) return airFace();
+        AIR.sm = MIC.an.smoothingTimeConstant;
+        MIC.an.smoothingTimeConstant = 0;
+        AIR.fft = new Float32Array(MIC.an.frequencyBinCount);
+        AIR.tr = [];
+        AIR.fr = [];
+        AIR.on = true;
+        $("#aiRes").innerHTML = "";
+        clearInterval(AIR.iv);
+        AIR.iv = setInterval(airTick, 50);
+        airFace();
+        playFace();
+      }
+      function airStop() {
+        clearInterval(AIR.iv);
+        if (!AIR.on) return;
+        AIR.on = false;
+        if (MIC.an) MIC.an.smoothingTimeConstant = AIR.sm;
+        const n = AIR.fr.length;
+        if (n >= 10) {
+          const c = [0, 0, 0];
+          AIR.fr.forEach((db) => c[airClass(db)]++);
+          const pc = c.map((x) => Math.round((x / n) * 100));
+          S.airs = [...(S.airs || []), { d: Date.now(), c: pc[0], m: pc[1], a: pc[2] }].slice(-12);
+          saveState();
+        } else AIR.short = true;
+        micFree();
+        airFace();
+      }
+      function airTick() {
+        if (!AIR.on || !MIC.an) return;
+        MIC.an.getFloatTimeDomainData(MIC.buf);
+        const { hz } = detectPitch(MIC.buf, ctx.sampleRate);
+        let db = NaN;
+        AIR.vc = hz > 0 ? (AIR.vc || 0) + 1 : 0;
+        if (AIR.vc > 3) {
+          MIC.an.getFloatFrequencyData(AIR.fft);
+          db = airDb(AIR.fft, hz, ctx.sampleRate);
+        }
+        AIR.tr.push(db);
+        if (AIR.tr.length > 160) AIR.tr.shift();
+        if (db === db) AIR.fr.push(db);
+        const v = AIR.tr.slice(-8).filter((x) => x === x);
+        if (!v.length) {
+          $("#aiNote").textContent = "—";
+          $("#aiBar").style.width = "0";
+        } else {
+          const m = v.sort((a, b) => a - b)[v.length >> 1];
+          $("#aiNote").textContent = AIR_NAME[airClass(m)];
+          $("#aiBar").style.width = clamp(((m + 36) / 36) * 100, 2, 100) + "%";
+        }
+        airDraw();
+      }
+      // the trace: the last 8 s; low is clean, high is breath
+      function airDraw() {
+        const cv = $("#aiCv");
+        if (!cv.offsetParent) return;
+        const [g, w, h, d] = fitCanvas(cv),
+          LO = -40,
+          HI = 0,
+          y = (db) => h - clamp((db - LO) / (HI - LO), 0, 1) * (h - 8 * d) - 4 * d,
+          C = [css("--ok"), css("--acc"), css("--acc2")];
+        g.clearRect(0, 0, w, h);
+        [[LO, AIR_CLEAN, 0], [AIR_CLEAN, AIR_MIX, 1], [AIR_MIX, HI, 2]].forEach(([a, b, k]) => {
+          g.globalAlpha = 0.12;
+          g.fillStyle = C[k];
+          g.fillRect(0, y(b), w, y(a) - y(b));
+          g.globalAlpha = 0.8;
+          g.font = `800 ${8 * d}px ${css("--mono") || "monospace"}`;
+          g.textBaseline = "top";
+          g.fillText(AIR_NAME[k], 4 * d, y(b) + 3 * d);
+        });
+        g.globalAlpha = 1;
+        g.lineWidth = 2.5 * d;
+        g.lineJoin = "round";
+        const dx = w / 160;
+        for (let i = 1; i < AIR.tr.length; i++) {
+          const a = AIR.tr[i - 1],
+            b = AIR.tr[i];
+          if (a !== a || b !== b) continue;
+          g.strokeStyle = C[airClass(b)];
+          LINE(g, (160 - AIR.tr.length + i - 1) * dx, y(a), (160 - AIR.tr.length + i) * dx, y(b));
+        }
+      }
+      function airFace() {
+        const last = (S.airs || [])[(S.airs || []).length - 1],
+          prev = (S.airs || [])[(S.airs || []).length - 2];
+        $("#aiNow").innerHTML = last ? `<i>LAST MEASURE</i>${last.c}% clean · ${last.a}% airy` : `<i>AIR</i>NOT MEASURED`;
+        if (AIR.on) $("#aiRes").innerHTML = `<b>Sing a note or a phrase.</b> Hold an easy “ah” or sing a line of a song. Tap STOP for the result.`;
+        else if (AIR.short) {
+          AIR.short = false;
+          $("#aiRes").innerHTML = `Not enough voice to measure: sing for a few seconds, close to the microphone.`;
+        } else if (last)
+          $("#aiRes").innerHTML =
+            `Of the tone you sang, <b>${last.c}% was clean</b>, ${last.m}% mixed and <b>${last.a}% airy</b>.` +
+            (prev ? ` <span class="hint">The measure before: ${prev.c}% clean, ${prev.a}% airy.</span>` : "") +
+            ` <span class="hint">Airy tone is not wrong: it is a style. These numbers show how much of it you can choose.</span>`;
+        else $("#aiRes").innerHTML = `<b>Find out how airy your voice is.</b> Tap START and sing a note or a phrase: the trace shows clean tone low and breath high.`;
+        rib("aiGo", AIR.on ? "stop" : "mic", AIR.on ? "STOP" : "START", AIR.on);
+        $("#aiShapes").innerHTML = AIR_SH.map((x, i) => `<button data-i="${i}" title="${x.title}"><b>${ICONS.guide}</b><i>${x.n}</i></button>`).join("");
+        $$("#aiShapes button").forEach((b) => {
+          b.classList.toggle("on", +b.dataset.i === AIR.sh);
+          b.onclick = () => ((AIR.sh = +b.dataset.i), airFace());
+        });
+        airShape();
+      }
+      // the mouth and throat, from the side (facing right): lips, tongue, soft palate, larynx
+      const AIR_SH = [
+        { n: "HUM · NG", title: "Hum with the tongue against the soft palate", jaw: 0, lip: 0, tip: [134, 124], hump: [100, 84], vel: 0, lar: 168,
+          t: "<b>Hum, then “ng”.</b> Lips closed, teeth apart. The back of the tongue touches the soft palate, which hangs down: the sound goes out through the nose. Feel the buzz on the face. A clean hum is the base of a clean tone: no air leaks from the lips." },
+        { n: "NAY · TWANG", title: "A bright “nay”, like a cartoon witch", jaw: 0.3, lip: 0, tip: [136, 122], hump: [112, 90], vel: 1, lar: 160,
+          t: "<b>“Nay”, bright as a witch.</b> The tongue is high and forward, the soft palate lifts and the throat narrows a little. The narrowing keeps the folds together, so there is little air in the tone. A good way into mix voice, at a low volume." },
+        { n: "OO", title: "A round, closed “oo”", jaw: 0.35, lip: 1, tip: [122, 140], hump: [92, 100], vel: 1, lar: 172,
+          t: "<b>“Oo”, round.</b> The lips come forward and the larynx sinks a little, so the tone is dark and the throat long. Keep the jaw loose. If the “oo” turns airy, bring the lips a little closer without pushing." },
+        { n: "AH", title: "An open, relaxed “ah”", jaw: 1, lip: 0, tip: [128, 152], hump: [106, 150], vel: 1, lar: 168,
+          t: "<b>“Ah”, open.</b> The jaw drops, the tongue rests low and flat with its tip behind the lower teeth, the soft palate is up. Do not push the jaw forward. Hold it and watch the trace: it should stay low." },
+        { n: "YAWN-SIGH", title: "The yawn position: an open throat", jaw: 0.8, lip: 0, tip: [124, 154], hump: [100, 148], vel: 1, lar: 182,
+          t: "<b>The start of a yawn.</b> The larynx goes down and the soft palate goes up: the throat is as big as it gets. Sing from here on an easy sigh, then bring the sound to a normal “ah” without losing the space." },
+      ];
+      function airShape() {
+        const x = AIR_SH[AIR.sh],
+          ly = 102 + x.jaw * 26,
+          cy = 132 + x.jaw * 30,
+          lx = 150 + x.lip * 9,
+          vt = [74 + (1 - x.vel) * 12, 92 + (1 - x.vel) * 22],
+          [tx, ty] = x.tip,
+          [hx, hy] = x.hump,
+          L = x.lar,
+          P = (d, c = "") => `<path d="${d}"${c ? ` class="${c}"` : ""}/>`,
+          T = (txt, a, b, px, py) => `<text x="${a}" y="${b}">${txt}</text>` + P(`M${a + 2} ${b + 2}L${px} ${py}`, "ft");
+        $("#aiSvg").innerHTML = [
+          P(`M150 40Q172 68 160 86L${lx} 100`), // nose and upper lip
+          P(`M${lx} ${ly}Q${lx + 3} ${ly + 12} 140 ${cy}L104 ${cy + 22}L98 200`), // lower lip, chin, front of the neck
+          P(`M${lx - 6} 100Q122 80 92 86`), // hard palate
+          P(`M92 86Q80 86 ${vt[0]} ${vt[1]}`), // soft palate
+          P("M68 70V200"), // back wall of the throat
+          P("M152 74Q120 60 70 66", "ft"), // the nose
+          P(`M${tx} ${ty}Q${hx} ${hy} 80 ${L - 14}L90 ${L - 4}Q${(tx + 90) / 2} ${ty + 22} ${tx} ${ty}Z`, "tg"), // the tongue
+          `<rect x="76" y="${L}" width="20" height="24" rx="4"/>`, // larynx
+          P(`M80 ${L + 12}H92`),
+          P(`M78 ${L + 24}V200M94 ${L + 24}V200`),
+          P(`M84 ${L - 12}l6 12`),
+          P(`M82 ${L}V100Q82 ${(100 + ly) / 2} ${lx - 6} ${(100 + ly) / 2 + 1}`, "fl"), // the air
+          T("SOFT PALATE", 4, 50, vt[0] + 1, vt[1] - 1),
+          T("TONGUE", 4, 122, tx - 20, ty + 4),
+          T("LARYNX", 4, L + 10, 76, L + 12),
+        ].join("");
+        $("#aiTip").innerHTML = x.t;
+      }
+      $("#aiGo").onclick = () => (AIR.on ? airStop() : airStart());
+
       // ---- the tabs in the views, ▶ and the frame loop
       function tabsShow(v, prev) {
         if (prev !== v) {
           if (prev === "range") rangeStop();
+          if (prev === "air") airStop();
           if (prev === "game") gameStop(false);
           if (prev === "vox" && VX.rec) vxRecCancel();
         }
         $("#play").hidden = v === "prog";
         if (v === "range") rangeFace();
+        if (v === "air") airFace();
         if (v === "at") atTakesFill();
         if (v === "vox") vxFace();
         if (v === "game") gameFace();
@@ -8255,17 +8525,19 @@ registerProcessor("autotune", AutoTune);
         else if (v === "vox") vxFrame();
         else if (v === "game") gameFrame();
         else if (v === "range") rangeDraw();
+        else if (v === "air") airDraw();
         else return false;
         sessionFrame();
         return true;
       }
-      const tabBusy = () => (S.view === "at" && AT.live) || (S.view === "vox" && (!!VX.rec || VX.play.size > 0)) || (S.view === "game" && G.on);
+      const tabBusy = () => (S.view === "air" && AIR.on) || (S.view === "at" && AT.live) || (S.view === "vox" && (!!VX.rec || VX.play.size > 0)) || (S.view === "game" && G.on);
       function tabOn(v) {
-        return v === "range" ? RG.on : v === "at" ? AT.live : v === "vox" ? VX.play.size > 0 : v === "game" ? G.on : null;
+        return v === "range" ? RG.on : v === "air" ? AIR.on : v === "at" ? AT.live : v === "vox" ? VX.play.size > 0 : v === "game" ? G.on : null;
       }
       function tabPlay() {
         const v = S.view;
         if (v === "range") RG.on ? rangeStop() : rangeStart();
+        else if (v === "air") AIR.on ? airStop() : airStart();
         else if (v === "at") atToggle();
         else if (v === "vox") getCtx().then(vxAll);
         else if (v === "game") G.on ? gameStop(false) : gameStart();
@@ -8274,6 +8546,7 @@ registerProcessor("autotune", AutoTune);
       }
       function tabsStop() {
         rangeStop();
+        airStop();
         gameStop(false);
         vxRecCancel();
         if (VX.play.size) vxStopAll();
