@@ -32,6 +32,15 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="theme-color" content="#0d0f12" />
+    <meta name="apple-mobile-web-app-title" content="SING.Pocket" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <script>
+      if ("serviceWorker" in navigator && !location.pathname.includes("/@") &&
+          ((location.protocol === "https:" && location.hostname !== "localhost") ||
+           (location.protocol === "http:" && ["localhost", "127.0.0.1"].includes(location.hostname)))) {
+        addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(console.warn));
+      }
+    </script>
     <script>
       try {
         document.documentElement.dataset.theme = localStorage.getItem("sing.theme") || "dark";
@@ -41,6 +50,7 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20108%20108%22%3E%3Crect%20width%3D%22108%22%20height%3D%22108%22%20rx%3D%2224%22%20fill%3D%22%230d0f12%22%2F%3E%3Cpath%20d%3D%22M44.44%2077.22L44.44%2077.22Q38.52%2077.22%2034.11%2075.47Q29.70%2073.71%2027.26%2070.05Q24.82%2066.39%2024.79%2060.68L24.79%2060.68L36.51%2060.68Q36.63%2062.76%2037.56%2064.19Q38.49%2065.63%2040.18%2066.36Q41.88%2067.09%2044.26%2067.09L44.26%2067.09Q46.24%2067.09%2047.58%2066.60Q48.93%2066.12%2049.61%2065.25Q50.30%2064.38%2050.30%2063.25L50.30%2063.25Q50.30%2062.21%2049.64%2061.43Q48.99%2060.65%2047.49%2060.01Q46.00%2059.37%2043.46%2058.85L43.46%2058.85L38.89%2057.88Q32.87%2056.59%2029.41%2053.50Q25.95%2050.40%2025.95%2045.06L25.95%2045.06Q25.95%2040.72%2028.30%2037.47Q30.65%2034.22%2034.78%2032.41Q38.92%2030.59%2044.32%2030.59L44.32%2030.59Q49.84%2030.59%2053.86%2032.44Q57.87%2034.29%2060.05%2037.63Q62.23%2040.97%2062.26%2045.42L62.26%2045.42L50.42%2045.42Q50.27%2043.20%2048.79%2041.96Q47.31%2040.72%2044.32%2040.72L44.32%2040.72Q42.43%2040.72%2041.21%2041.17Q39.99%2041.61%2039.41%2042.40Q38.83%2043.20%2038.83%2044.20L38.83%2044.20Q38.83%2045.27%2039.45%2046.08Q40.08%2046.89%2041.43%2047.48Q42.79%2048.08%2044.93%2048.54L44.93%2048.54L48.65%2049.33Q52.41%2050.12%2055.11%2051.44Q57.81%2052.75%2059.53%2054.50Q61.26%2056.26%2062.06%2058.46Q62.87%2060.65%2062.87%2063.25L62.87%2063.25Q62.87%2067.73%2060.66%2070.86Q58.45%2073.99%2054.33%2075.61Q50.21%2077.22%2044.44%2077.22Z%22%20fill%3D%22%23e8ecf1%22%2F%3E%3Cpath%20d%3D%22M76.93%2077.41L76.93%2077.41Q74.24%2077.41%2072.44%2075.64Q70.64%2073.87%2070.64%2071.21L70.64%2071.21Q70.64%2068.56%2072.44%2066.79Q74.24%2065.02%2076.93%2065.02L76.93%2065.02Q79.61%2065.02%2081.41%2066.79Q83.21%2068.56%2083.21%2071.21L83.21%2071.21Q83.21%2073.87%2081.41%2075.64Q79.61%2077.41%2076.93%2077.41Z%22%20fill%3D%22%23e40078%22%2F%3E%3C%2Fsvg%3E" />
     <link rel="icon" type="image/png" sizes="32x32" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACJklEQVR4nMSXTS/0UBTHz207L8+DERKEnWBnJ2Z8AlYSiZUJERsSwdjY+wiGRGJhIfGylfAhprYmsRCx8RIiEcyIienU/TdujTJtVau/5Kbn5rb5n3vOuW2PQlXU17e1SsrrrK7TCJ/28iGTP2h85Bmj/Uo5sl4o3NyKBSaMRKIprTO2AT8oWApM12ceH+93MZGrxHe4GaXgiRJjo/FY/LRUejlmCDuTX88o+J1bKehapEuO/48t8ckg/T1RSa48K+8FFwrQZg2NzWXyr9p/iqaEKA5kiUJGcXtjKjVA85mMaa+tZg17NbtCvwE1oDvdtL27Z4h+h6rmaC2bNa5ecIzAQmaxpjgw1nhg1LQ3BxwjcHp2btpit4bwAE/JQsZcG0+PeYqCbQS+27kQsYoFlgKrQ4iIXwUI5Fj833KtxcvLC/7dYF8igTkG6gPrXncPXJ0CCIHqnFcDB1ADgTngxhmvRSg5iSHnYgDkHcO6Y5wKL9g6oOZyXxwS+bcTTJY7aKs4THOlPnLiR+8BO3q6Ok375GHatCfrDulIuar5nOPHyE1uxbEUHCnXpp3U2m2fdV2EoviSqdSHkKoaabI6iND38zSAyboD8sWBoAj9fwAOaBQeGhzIU3jkJbRLFBLQDrUxqZSVbgmNIno1+mOgWSze3hi/5OjR0KvxmAxR8P0hmtOpT82pcCIaSWyiXeLTJj5ayL9jipN2zHO+wfvBiaenO/PN9QYAAP//voq+6AAAAAZJREFUAwBC1t7UkH5MBgAAAABJRU5ErkJggg==" />
     <link rel="apple-touch-icon" href="data:image/png;base64,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" />
+    <link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192.png" />
     <style>
       /* ===================== shared with TRACK.Pocket (base, pocket layout, themes, help, backdrop) ===================== */
 :root { --bg: #0d0f12; --panel: #161a20; --panel2: #1d222a; --line: #2a313b; --text: #e8ecf1; --dim: #8a94a3; --acc: #7cf29a; --acc2: #ffb347; --hot: #ff5e7a; --blue: #6ab7ff; --r: 10px; --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace; --ink: #082012; --ink2: #1b1000; --beat: #1a1f27; --playbg: #24402e; --playbg2: #1f5133; --wave: #0a0c0f; --scope: #ffb347; --tie: #1d2a22; --lcn: #232a35; --hi: #fff; --blink: #35404f; }
@@ -1645,7 +1655,7 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
             take records the piano or the song together with your voice, like a performance; off records only you.
           </div>
           <h3 style="margin-top: 12px">MIDI device (experimental)</h3>
-          <div class="mrow"><button id="midiDev">CONNECT</button><button id="midiMap">ASSIGN</button><button id="midiClr">CLEAR</button><button id="midiTest" title="See what your device sends">TEST</button></div>
+          <div class="mrow"><button id="midiDev">CONNECT</button><button id="midiMap">ASSIGN</button><button id="midiClr">CLEAR</button><button id="midiTest" title="See what your device sends">TEST</button><button id="midiView" title="Live device diagram and assignments">DEVICE</button></div>
           <div class="hint">
             A MIDI keyboard plays reference notes to sing to; in SAMPLER it plays the selected pad at the key's pitch;
             in the exercise editor it writes or records the notes. <b>ASSIGN</b> ties pads, buttons and knobs to the
@@ -1761,6 +1771,7 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
     </div>
     <div id="toast"></div>
 
+    <script src="midi-device.js"></script>
     <script>
       "use strict";
       // ======================================================================
@@ -1776,7 +1787,7 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         clearTimeout(e._t);
         e._t = setTimeout(() => e.classList.remove("show"), ms);
       }
-      const esc = (x) => String(x ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
+      const esc = (x) => String(x ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
       const PAL = ["124,242,154", "255,179,71", "106,183,255", "255,111,165", "197,139,255", "77,224,208"];
       const PC = (i) => {
         const t = css("--chc")
@@ -1858,6 +1869,18 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         game: { lvl: "easy", ex: "five", cue: "phrase" }, // plane: level, the exercise the hoops follow, the cue before each round (as wcue)
         gameBest: {}, // plane: best score per level
       };
+      // Safety net: an error while the page starts is most often a damaged or old saved setting. Once per session, the
+      // settings are kept aside (as sing.state.bad) and the app starts with its defaults, instead of failing on every launch.
+      addEventListener("load", () => (window.__up = 1));
+      addEventListener("error", () => {
+        if (window.__up || sessionStorage.getItem("sing.reset")) return;
+        sessionStorage.setItem("sing.reset", "1");
+        try {
+          localStorage.setItem("sing.state.bad", localStorage.getItem("sing.state") || "");
+          localStorage.removeItem("sing.state");
+        } catch {}
+        location.reload();
+      });
       try {
         Object.assign(S, JSON.parse(localStorage.getItem("sing.state") || "{}"));
       } catch {}
@@ -3053,9 +3076,10 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         try {
           const j = JSON.parse(await f.text()),
             list = (Array.isArray(j) ? j : j.exercises || []).filter(
-              (x) => x && Array.isArray(x.n) && Array.isArray(x.d) && x.n.length && x.n.length === x.d.length && [...x.n, ...x.d].every((v) => typeof v === "number" && isFinite(v)),
+              (x) => x && Array.isArray(x.n) && Array.isArray(x.d) && x.n.length && x.n.length <= 400 && x.n.length === x.d.length && [...x.n, ...x.d].every((v) => typeof v === "number" && isFinite(v)),
             );
           if (!list.length) return toast("No exercises in this file");
+          list.splice(100);
           list.forEach((x, k) => {
             const ex = { id: "u" + Date.now().toString(36) + k, name: String(x.name || "Imported").slice(0, 24), hint: String(x.hint || "yours").slice(0, 60), n: x.n, d: x.d.map((v) => Math.max(0.1, v)), custom: true, smp: Number.isInteger(x.smp) && x.smp >= 0 && x.smp < 16 ? x.smp : null };
             S.cex.push(ex);
@@ -7111,6 +7135,7 @@ registerProcessor("autotune", AutoTune);
       //   a report with the first messages, to share in an issue or to replay in a test.
       // ---------------------------------------------------------------------------------------------
       const MI = { acc: null, names: [], held: new Map(), on: null, off: null, cc: null, actions: () => [], map: {}, learn: null, down: new Map(), sus: false, susd: new Set(), test: null };
+      const midiPanel = createMidiPanel(MI, miRun, (data, from) => midiMsg({ data }, from));
       try {
         MI.map = JSON.parse(localStorage.getItem(MI_KEY + ".map") || "{}");
       } catch {}
@@ -7141,6 +7166,7 @@ registerProcessor("autotune", AutoTune);
         midiFace();
       }
       function midiMsg(e, from) {
+        midiPanel.observe(e.data, from);
         if (MI.test) miTestMsg(e.data, from);
         const [st, a, b] = e.data,
           cmd = st & 0xf0,
@@ -7151,6 +7177,7 @@ registerProcessor("autotune", AutoTune);
         if (!on && !off && !cc) return;
         const key = (cc ? "c" : "n") + ch + ":" + a;
         if (MI.learn) return on || (cc && b > 0) ? miLearnMsg(key, cc, ch, a) : undefined;
+        if (midiPanel.route(from, key, cc, on, b)) return;
         const act = MI.map[key] && MI.actions().find((x) => x.id === MI.map[key]);
         if (act) return miRun(act, key, cc, on, b);
         if (cc && a === 64) {
@@ -7183,7 +7210,8 @@ registerProcessor("autotune", AutoTune);
       ];
       function midiTest() {
         if (!MI.names.length) return toast("Connect a MIDI device first");
-        MI.test = { names: MI.names.slice(), from: new Set(), ch: new Set(), lo: 127, hi: 0, notes: 0, vlo: 127, vhi: 0, off80: 0, off90: 0, cc: {}, pb: 0, cat: 0, pat: 0, pc: 0, clock: 0, tr: new Set(), sysex: 0, log: [], t0: performance.now() };
+        if (MI.test) clearTimeout(MI.test.f);
+        MI.test = { names: MI.names.slice(), from: new Set(), ch: new Set(), lo: 127, hi: 0, notes: 0, keys: new Set(), vlo: 127, vhi: 0, off80: 0, off90: 0, cc: {}, pb: 0, cat: 0, pat: 0, pc: 0, clock: 0, tr: new Set(), sysex: 0, log: [], t0: performance.now() };
         miTestFace();
       }
       function miTestMsg(d, from) {
@@ -7200,6 +7228,7 @@ registerProcessor("autotune", AutoTune);
           T.ch.add((st & 15) + 1);
           if (cmd === 0x90 && d[2] > 0) {
             T.notes++;
+            T.keys.add(d[1]);
             T.lo = Math.min(T.lo, d[1]);
             T.hi = Math.max(T.hi, d[1]);
             T.vlo = Math.min(T.vlo, d[2]);
@@ -7217,8 +7246,11 @@ registerProcessor("autotune", AutoTune);
           else if (cmd === 0xa0) T.pat++;
           else if (cmd === 0xc0) T.pc++;
         }
-        clearTimeout(T.f);
-        T.f = setTimeout(miTestFace, 60);
+        // Refresh at most once per 60 ms; a continuous MIDI clock must not postpone the display forever.
+        if (!T.f) T.f = setTimeout(() => {
+          T.f = null;
+          if (MI.test === T) miTestFace();
+        }, 60);
       }
       const miNoteName = (n) => MI_NN[n % 12] + (Math.floor(n / 12) - 1);
       function miTestRows() {
@@ -7232,7 +7264,7 @@ registerProcessor("autotune", AutoTune);
         return [
           ["◉", "Device: " + (T.names.join(", ") || "?") + (fam ? " — " + fam[1] : "")],
           ...(fam ? [["i", fam[2]]] : []),
-          yes(T.notes, T.notes ? `Notes: ${T.notes}, ${miNoteName(T.lo)} to ${miNoteName(T.hi)}` : "Notes: play some keys or pads"),
+          yes(T.notes, T.notes ? `Notes: ${T.keys.size} different (${T.notes} presses), ${miNoteName(T.lo)} to ${miNoteName(T.hi)}` : "Notes: play some keys or pads"),
           yes(T.ch.size, "Channels: " + ([...T.ch].sort((a, b) => a - b).join(", ") || "—") + (T.ch.has(10) ? " (10 = pads / drums)" : "")),
           yes(T.vhi > T.vlo, T.notes ? (T.vhi > T.vlo ? `Velocity: ${T.vlo} to ${T.vhi}` : `Velocity: always ${T.vhi} (fixed, or play softer and harder)`) : "Velocity: —"),
           yes(T.off80 || T.off90, "Note off: " + (T.off80 && T.off90 ? "both kinds" : T.off80 ? "note-off messages" : T.off90 ? "note-on with velocity 0" : "—")),
@@ -7252,6 +7284,7 @@ registerProcessor("autotune", AutoTune);
           el = document.createElement("div");
           el.id = "miLearn";
           document.body.appendChild(el);
+          el.innerHTML = `<div class="mlBox mtBox"><i>MIDI TEST · play keys and pads, turn knobs, press the pedal, move the wheels</i><ul></ul><div class="mlB"><button data-mt="again">START AGAIN</button><button data-mt="copy">COPY REPORT</button><button data-mt="done" class="on">DONE</button></div></div>`;
         }
         el.onclick = (e) => {
           const b = e.target.closest("[data-mt]");
@@ -7263,13 +7296,15 @@ registerProcessor("autotune", AutoTune);
               .catch(() => toast("Could not copy here"));
           } else if (b.dataset.mt === "again") midiTest();
           else {
+            clearTimeout(MI.test.f);
             MI.test = null;
             el.remove();
           }
         };
-        el.innerHTML = `<div class="mlBox mtBox"><i>MIDI TEST · play keys and pads, turn knobs, press the pedal, move the wheels</i><ul>${miTestRows()
-          .map(([a, b]) => `<li class="${a === "✔" ? "ok" : a === "i" ? "inf" : ""}"><b>${a}</b>${b}</li>`)
-          .join("")}</ul><div class="mlB"><button data-mt="again">START AGAIN</button><button data-mt="copy">COPY REPORT</button><button data-mt="done" class="on">DONE</button></div></div>`;
+        // Only replace report rows: clock updates must not detach buttons mid-click.
+        el.querySelector("ul").innerHTML = miTestRows()
+          .map(([a, b]) => `<li class="${a === "✔" ? "ok" : a === "i" ? "inf" : ""}"><b>${a}</b>${String(b).replace(/[&<>"']/g, (c) => "&#" + c.charCodeAt(0) + ";")}</li>`)
+          .join("");
       }
       function miRun(act, key, cc, on, v) {
         if (act.kind === "knob") return cc ? act.run(v / 127) : on && act.run(v / 127); // a pad on a knob: its velocity
@@ -7372,7 +7407,7 @@ registerProcessor("autotune", AutoTune);
 #miLearn li{display:flex;gap:8px;padding:5px 0;border-top:1px solid var(--line)}
 #miLearn li b{width:14px;flex:none;text-align:center}
 #miLearn li.ok{color:var(--text)}#miLearn li.ok b{color:var(--acc)}#miLearn li.inf{font-weight:500;font-style:italic}
-.mrow,#midiBar{display:flex;gap:6px}.mrow{flex:3}.mrow button,#midiBar>button{flex:1;min-height:38px}`;
+.mrow,#midiBar{display:flex;gap:6px}.mrow{flex:3;flex-wrap:wrap}.mrow button,#midiBar>button{flex:1 1 68px;min-height:38px}`;
         document.head.appendChild(st);
       }
       // the buttons in OPTIONS (#midiDev, #midiMap, #midiClr)
@@ -7389,12 +7424,15 @@ registerProcessor("autotune", AutoTune);
         if (c) c.disabled = !n;
         const t = document.getElementById("midiTest");
         if (t) t.disabled = !MI.names.length;
+        const v = document.getElementById("midiView");
+        if (v) v.disabled = !MI.names.length;
       }
       [
         ["midiDev", () => midiConnect()],
         ["midiMap", midiAssign],
         ["midiClr", midiClearMap],
         ["midiTest", midiTest],
+        ["midiView", () => midiPanel.open()],
       ].forEach(([id, f]) => {
         const b = document.getElementById(id);
         if (b) b.onclick = f;
