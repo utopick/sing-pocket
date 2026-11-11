@@ -15,7 +15,8 @@
               vox sampler, plane game, history), backdrop, help, boot
 
   Storage
-    localStorage  sing.theme, sing.lang, sing.welcome, sing.state { view, voice, ex, bpm, updown, listen, key,
+    localStorage  sing.mic  { dev, ch, cfg: { <input id or "default">: { gain, gate, hp, lo, hi, proc } } }
+                  sing.theme, sing.lang, sing.welcome, sing.state { view, voice, ex, bpm, updown, listen, key,
                   tempo, octFree, backing, notes, song, at, range, ranges, kar, vx, game, gameBest }
                   sing.log      the practice history [{ d, k, s, sc, n }]
     IndexedDB     "sing-pocket": songs { id, name, artist, title, blob, lyrics, lyrOff, ref, refHop, guide }
@@ -1672,6 +1673,32 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
             in the exercise editor it writes or records the notes. <b>ASSIGN</b> ties pads, buttons and knobs to the
             sampler pads, START of the warm-up and the plane, and the next exercise. Chrome, Edge or Firefox; not Safari.
           </div>
+          <h3 style="margin-top: 12px">Microphone</h3>
+          <div class="row"><select id="msDev" title="Which microphone or audio input to sing into" style="flex: 1"></select></div>
+          <div class="row">
+            <select id="msCh" title="Which channel of the input to use" style="flex: 1"><option value="mix">Both channels</option><option value="L">Left (input 1)</option><option value="R">Right (input 2)</option></select>
+            <select id="msProc" title="The browser's own echo cancelling, noise reduction and auto gain" style="flex: 1"><option value="0">Raw (recommended)</option><option value="1">Browser processing</option></select>
+          </div>
+          <div class="row msr"><span>GAIN</span><input id="msGain" type="range" min="-12" max="18" step="0.5" title="Boost or cut what the app hears (not the system volume)" /><b id="msGainV"></b></div>
+          <div class="row msr"><span>GATE</span><input id="msGate" type="range" min="-60" max="-20" step="1" title="Sounds quieter than this are ignored (room noise)" /><b id="msGateV"></b></div>
+          <div class="row">
+            <select id="msHp" title="Cuts rumble and breath pops below this pitch" style="flex: 1"><option value="0">High-pass off</option><option value="60">High-pass 60 Hz</option><option value="80">High-pass 80 Hz</option><option value="100">High-pass 100 Hz</option><option value="150">High-pass 150 Hz</option><option value="200">High-pass 200 Hz</option></select>
+            <select id="msLo" title="The lowest note your voice reaches" style="flex: 1"></select><select id="msHi" title="The highest note your voice reaches" style="flex: 1"></select>
+          </div>
+          <div class="row">
+            <button id="msLive" title="Open the microphone with these settings and watch the level and the note" style="flex: 1">LIVE</button>
+            <button id="msTests" title="Guided tests (noise, level, pops, range, processing) and AUTO SETUP" style="flex: 1">TESTS</button>
+            <button id="msReset" title="Back to the default settings for this microphone" style="flex: 1">RESET</button>
+          </div>
+          <div id="msBox" hidden>
+            <div style="height: 14px; border: 1px solid var(--line); border-radius: 7px; overflow: hidden"><i id="msLvl" style="display: block; height: 100%; width: 0; background: var(--acc)"></i></div>
+            <div id="msNote" style="font: 900 28px/1.3 var(--mono); text-align: center">--</div>
+          </div>
+          <div class="hint">
+            Pick the input, then LIVE to watch it. <b>TESTS</b> measures the noise, your level, breath pops, your range and whether the browser's
+            processing helps, and <b>AUTO SETUP</b> does all of it and sets gain, gate, high-pass and range for this microphone. The settings are kept per input.
+            The range limits the pitch detector to your voice, which avoids octave jumps.
+          </div>
           <h3 style="margin-top: 12px">Pitch test</h3>
           <div class="row">
             <button id="oFree" style="flex: 1"></button>
@@ -2295,18 +2322,78 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         }
       }
 
+      // ---- microphone settings, kept per input device: the app's gain, gate, high-pass and voice range, and the browser's processing
+      const MS = (() => {
+        let o = {};
+        try {
+          o = JSON.parse(localStorage.getItem("sing.mic")) || {};
+        } catch {}
+        return { dev: typeof o.dev === "string" ? o.dev : "", ch: ["mix", "L", "R"].includes(o.ch) ? o.ch : "mix", cfg: o.cfg && typeof o.cfg === "object" ? o.cfg : {} };
+      })();
+      const MD = { gain: 1, gate: 0.008, hp: 0, lo: 36, hi: 88, proc: false }; // C2 to E6, as the detector always did
+      const clampN = (v, a, b, d) => (Number.isFinite(+v) ? Math.min(b, Math.max(a, +v)) : d);
+      const msCfg = () => {
+        const c = MS.cfg[MS.dev || "default"] || {};
+        return { gain: clampN(c.gain, 0.1, 16, MD.gain), gate: clampN(c.gate, 0.001, 0.1, MD.gate), hp: [0, 60, 80, 100, 150, 200].includes(c.hp) ? c.hp : 0, lo: Math.round(clampN(c.lo, 21, 70, MD.lo)), hi: Math.round(clampN(c.hi, 55, 100, MD.hi)), proc: c.proc === true };
+      };
+      let MC = msCfg();
+      const msSave = () => localStorage.setItem("sing.mic", JSON.stringify(MS));
+      function msSet(o) {
+        MS.cfg[MS.dev || "default"] = { ...msCfg(), ...o };
+        MC = msCfg();
+        msSave();
+        msApply();
+        msFace();
+      }
+      // the app's gain and high-pass follow the sliders while the microphone is open
+      function msApply() {
+        if (MIC.gn && ctx) {
+          MIC.gn.gain.setTargetAtTime(MC.gain, ctx.currentTime, 0.02);
+          MIC.hp.frequency.setTargetAtTime(MC.hp || 5, ctx.currentTime, 0.02);
+        }
+      }
+      // opens the chosen input raw (or with the browser's processing when asked), and goes back to the default one if it is unplugged
+      const msOpen = (proc = MC.proc) =>
+        navigator.mediaDevices
+          .getUserMedia({ audio: { echoCancellation: proc, noiseSuppression: proc, autoGainControl: proc, channelCount: { ideal: 2 }, ...(MS.dev ? { deviceId: { exact: MS.dev } } : {}) }, video: false })
+          .catch((e) => {
+            if (MS.dev && (e.name === "OverconstrainedError" || e.name === "NotFoundError")) {
+              MS.dev = "";
+              MC = msCfg();
+              msSave();
+              msFace();
+              toast("That input is not connected. Using the default one.");
+              return msOpen(proc);
+            }
+            throw e;
+          });
+      // one channel of the input, or all of it
+      function msTap(c, src) {
+        if (MS.ch === "mix" || (src.channelCount || 1) < 2) return src;
+        const sp = c.createChannelSplitter(2),
+          g = c.createGain();
+        src.connect(sp);
+        sp.connect(g, MS.ch === "R" ? 1 : 0);
+        return g;
+      }
+
       const MIC = { on: false, stream: null, src: null, an: null, buf: new Float32Array(4096) };
       async function micStart() {
         if (MIC.on) return true;
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return micError("NO_API"), false;
         try {
           const c = await getCtx();
-          MIC.stream = await navigator.mediaDevices.getUserMedia({
-            audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
-            video: false,
-          });
+          MIC.stream = await msOpen();
           await c.resume().catch(() => {}); // the permission prompt can suspend the context
-          MIC.src = c.createMediaStreamSource(MIC.stream);
+          // input -> channel -> high-pass -> gain: MIC.src is the end of this chain, so the recording, autotune and the sampler all get the same cleaned voice
+          MIC.hp = c.createBiquadFilter();
+          MIC.hp.type = "highpass";
+          MIC.hp.Q.value = 0.707;
+          MIC.gn = c.createGain();
+          msTap(c, c.createMediaStreamSource(MIC.stream)).connect(MIC.hp);
+          MIC.hp.connect(MIC.gn);
+          MIC.src = MIC.gn;
+          msApply();
           MIC.an = c.createAnalyser();
           MIC.an.fftSize = 4096;
           MIC.src.connect(MIC.an);
@@ -2321,7 +2408,7 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         if (REC.on || (AT && AT.live)) return; // a recording, or live autotune, keeps the mic
         MIC.on = false;
         if (MIC.stream) MIC.stream.getTracks().forEach((t) => t.stop());
-        MIC.stream = MIC.src = MIC.an = null;
+        MIC.stream = MIC.src = MIC.an = MIC.hp = MIC.gn = null;
       }
       function micError(code) {
         const m = {
@@ -2332,12 +2419,353 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
         };
         toast(m[code] || "Could not open the microphone (" + code + ")", 3500);
       }
+      // ---- MIC TESTS: guided checks like the MIDI TEST, a report to copy, and AUTO SETUP that sets the parameters from them
+      const AR = { rows: {}, res: {}, busy: false },
+        arCh = ["left", "right"],
+        arSleep = (ms) => new Promise((r) => setTimeout(r, ms)),
+        arDb = (x) => (x > 1e-6 ? Math.round(20 * Math.log10(x)) : -120),
+        rmsOf = (b) => Math.sqrt(b.reduce((a, v) => a + v * v, 0) / b.length),
+        pkOf = (b) => b.reduce((a, v) => Math.max(a, Math.abs(v)), 0);
+      async function arRig(proc) {
+        const c = await getCtx(),
+          stream = await msOpen(proc);
+        c.resume().catch(() => {});
+        const src = c.createMediaStreamSource(stream),
+          sp = c.createChannelSplitter(2),
+          lp = c.createBiquadFilter(),
+          an = [0, 1, 2].map(() => {
+            const a = c.createAnalyser();
+            a.fftSize = 4096;
+            return a;
+          });
+        lp.type = "lowpass";
+        lp.frequency.value = 120;
+        src.connect(sp);
+        sp.connect(an[0], 0);
+        sp.connect(an[1], 1);
+        sp.connect(lp, MS.ch === "R" ? 1 : 0);
+        lp.connect(an[2]);
+        return { c, an, track: stream.getAudioTracks()[0], close: () => stream.getTracks().forEach((t) => t.stop()), bufs: [0, 1, 2].map(() => new Float32Array(4096)) };
+      }
+      // calls onWin with the three buffers (left, right, the low band of the chosen channel) every 60 ms
+      async function arRun(rig, ms, tick, onWin) {
+        const t0 = performance.now();
+        while (performance.now() - t0 < ms) {
+          await arSleep(60);
+          tick(Math.ceil((ms - (performance.now() - t0)) / 1000));
+          rig.an.forEach((a, k) => a.getFloatTimeDomainData(rig.bufs[k]));
+          onWin(rig.bufs);
+        }
+      }
+      const arInfo = (rig) => {
+        const st = rig.track.getSettings(),
+          yn = (v) => (v === false ? "off" : v === true ? "ON" : "?");
+        return [
+          ["◉", "Input: " + (rig.track.label || "?")],
+          [st.channelCount >= 2 ? "✔" : "·", `Channels: ${st.channelCount || "?"} · ${Math.round(rig.c.sampleRate)} Hz · reported input latency ${st.latency != null ? Math.round(st.latency * 1000) + " ms" : "?"}`],
+          ["i", `Processing now: echo cancel ${yn(st.echoCancellation)}, noise reduction ${yn(st.noiseSuppression)}, auto gain ${yn(st.autoGainControl)}`],
+        ];
+      };
+      const arLead = async (say, t) => (say(t), arSleep(1500));
+      async function arNoise(say) {
+        const rig = await arRig(),
+          o = { rms: [0, 0], dc: [0, 0], low: 0, n: 0 };
+        try {
+          await arLead(say, "Silence: stay quiet and keep the room quiet");
+          await arRun(rig, 2000, (n) => say("Silence: stay quiet · " + n), (b) => {
+            o.n++;
+            [0, 1].forEach((k) => {
+              o.rms[k] += rmsOf(b[k]);
+              o.dc[k] += Math.abs(b[k].reduce((a, v) => a + v, 0) / b[k].length);
+            });
+            o.low += rmsOf(b[2]);
+          });
+          o.rms = o.rms.map((v) => v / o.n);
+          o.dc = o.dc.map((v) => v / o.n);
+          o.low /= o.n;
+          AR.res.noise = o;
+          AR.rows.noise = [
+            ...arInfo(rig),
+            ...[0, 1].map((k) => {
+              const d = arDb(o.rms[k]);
+              return [d <= -60 ? "✔" : d <= -45 ? "·" : "✘", `Noise floor ${arCh[k]}: ${d} dBFS` + (d <= -60 ? " (quiet)" : d <= -45 ? " (some noise)" : " (noisy: a quieter room or a closer mic)") + (o.dc[k] > 0.02 ? ` · DC offset ${arDb(o.dc[k])} dB` : "")];
+            }),
+            [o.low > 0.01 ? "·" : "✔", `Rumble below 120 Hz: ${arDb(o.low)} dBFS` + (o.low > 0.01 ? " (a high-pass will help)" : "")],
+          ];
+        } finally {
+          rig.close();
+        }
+      }
+      async function arVoice(say) {
+        const rig = await arRig(),
+          nz = AR.res.noise ? AR.res.noise.rms : [0.002, 0.002],
+          o = { rms: [0, 0], pk: [0, 0], v: [0, 0], n: 0 };
+        try {
+          await arLead(say, "Voice: sing a steady, loud 'aaah' at your normal distance");
+          await arRun(rig, 5000, (n) => say("Voice: keep singing 'aaah' · " + n), (b) => {
+            o.n++;
+            [0, 1].forEach((k) => {
+              const r = rmsOf(b[k]);
+              o.pk[k] = Math.max(o.pk[k], pkOf(b[k]));
+              if (r > Math.max(0.006, nz[k] * 4)) (o.rms[k] += r), o.v[k]++;
+            });
+          });
+          const k = o.v[1] > o.v[0] ? 1 : 0;
+          if (o.v[k] < 5) {
+            AR.res.voice = null;
+            AR.rows.voice = [["✘", "Voice: almost nothing heard. Is the right microphone chosen, and is it unmuted?"]];
+            return;
+          }
+          const rms = o.rms[k] / o.v[k],
+            pk = o.pk[k];
+          AR.res.voice = { ch: k, rms, pk };
+          AR.rows.voice = [
+            ["✔", `Voice on the ${arCh[k]} channel: average ${arDb(rms)} dBFS, peak ${arDb(pk)} dBFS`],
+            [pk >= 0.99 ? "✘" : arDb(pk) < -24 ? "·" : "✔", pk >= 0.99 ? "Clipping: lower the microphone volume in the system, or sing further from it" : arDb(pk) < -24 ? "Quiet: AUTO SETUP will add gain" : "Good level"],
+          ];
+        } finally {
+          rig.close();
+        }
+      }
+      async function arPops(say) {
+        const rig = await arRig(),
+          o = { low: 0, pk: 0 };
+        try {
+          await arLead(say, "Pops: say 'pa pa pa pa' close to the microphone, like a plosive");
+          await arRun(rig, 4000, (n) => say("Pops: keep saying 'pa pa pa' · " + n), (b) => ((o.low = Math.max(o.low, pkOf(b[2]))), (o.pk = Math.max(o.pk, pkOf(b[0]), pkOf(b[1])))));
+          AR.res.pops = o;
+          AR.rows.pops = [[o.low > 0.25 ? "·" : "✔", `Low-frequency bursts: ${arDb(o.low)} dBFS (loudest below 120 Hz) against ${arDb(o.pk)} dBFS overall` + (o.low > 0.25 ? ". Strong pops: a higher high-pass helps, or sing a bit to the side of the mic" : ". Few pops")]];
+        } finally {
+          rig.close();
+        }
+      }
+      // the lowest and highest steady notes: a note counts when it stays within a semitone for 300 ms
+      async function arRange(say) {
+        const rig = await arRig(),
+          nz = AR.res.noise ? Math.max(...AR.res.noise.rms) : 0.002,
+          stable = [];
+        let run = [];
+        const end = () => (run.length >= 5 && stable.push(run.slice().sort((a, b) => a - b)[run.length >> 1]), (run = []));
+        try {
+          await arLead(say, "Range: sing a note, slide down to your lowest, then up to your highest");
+          await arRun(rig, 12000, (n) => say("Range: lowest note, then highest note · " + n), (b) => {
+            const k = rmsOf(b[1]) > rmsOf(b[0]) ? 1 : 0,
+              d = detectPitch(b[k], rig.c.sampleRate, 40, 1800, b[k].length, Math.max(0.005, nz * 3)),
+              m = d.hz > 0 ? hzToMidi(d.hz) : NaN;
+            if (!(m >= 0)) return end();
+            if (run.length && Math.abs(m - run[run.length - 1]) > 1) end();
+            run.push(m);
+          });
+          end();
+          if (stable.length < 2) {
+            AR.res.range = null;
+            AR.rows.range = [["✘", "Range: too few steady notes heard. Hold each note a little longer, closer to the microphone"]];
+            return;
+          }
+          const lo = Math.min(...stable),
+            hi = Math.max(...stable);
+          AR.res.range = { lo, hi };
+          AR.rows.range = [["✔", `Your range: ${noteName(Math.round(lo))} (${midiToHz(lo).toFixed(0)} Hz) to ${noteName(Math.round(hi))} (${midiToHz(hi).toFixed(0)} Hz), ${((hi - lo) / 12).toFixed(1)} octaves`]];
+        } finally {
+          rig.close();
+        }
+      }
+      // the same steady note twice, raw and with the browser's processing: which gives the steadier pitch?
+      async function arProc(say) {
+        const nz = AR.res.noise ? Math.max(...AR.res.noise.rms) : 0.002,
+          sc = {};
+        for (const proc of [false, true]) {
+          const rig = await arRig(proc),
+            hz = [];
+          let n = 0;
+          try {
+            await arLead(say, `Processing ${proc ? "ON" : "OFF"}: sing one steady note`);
+            await arRun(rig, 4000, (t) => say(`Processing ${proc ? "ON" : "OFF"}: sing one steady note · ${t}`), (b) => {
+              n++;
+              const k = rmsOf(b[1]) > rmsOf(b[0]) ? 1 : 0,
+                d = detectPitch(b[k], rig.c.sampleRate, 60, 1400, b[k].length, Math.max(0.005, nz * 3));
+              if (d.hz > 0) hz.push(d.hz);
+            });
+          } finally {
+            rig.close();
+          }
+          if (hz.length < 5) sc[proc] = 0;
+          else {
+            const med = hz.slice().sort((a, b) => a - b)[hz.length >> 1],
+              dev = hz.map((h) => Math.abs(1200 * Math.log2(h / med))).sort((a, b) => a - b)[hz.length >> 1];
+            sc[proc] = (hz.length / n) / (1 + dev / 20);
+          }
+        }
+        AR.res.proc = sc;
+        const on = sc.true > sc.false * 1.15 && sc.true > 0.2;
+        AR.rows.proc = [[sc.false || sc.true ? "✔" : "✘", `Steadiness score: raw ${sc.false.toFixed(2)}, browser processing ${sc.true.toFixed(2)}. ` + (sc.false || sc.true ? (on ? "Processing helps this microphone" : "Raw is as good or better") : "Not enough notes heard")]];
+      }
+      // what the results suggest; each parameter is only set when its test was run
+      function arPlan() {
+        const R = AR.res,
+          cfg = {},
+          why = [],
+          k = R.voice ? R.voice.ch : 0,
+          nz = R.noise ? R.noise.rms[k] : 0.002;
+        let g = MC.gain;
+        if (R.voice) {
+          g = Math.min(8, Math.max(0.5, 0.5 / R.voice.pk)); // the loudest note lands near half scale
+          cfg.gain = Math.round(Math.pow(10, Math.round(20 * Math.log10(g) * 2) / 2 / 20) * 100) / 100;
+          g = cfg.gain;
+          why.push(`gain ${(20 * Math.log10(g)).toFixed(1)} dB`);
+        }
+        if (R.noise || R.voice) {
+          let gt = Math.min(0.03, Math.max(0.004, 3 * nz * g));
+          if (R.voice) gt = Math.min(gt, 0.3 * R.voice.rms * g);
+          cfg.gate = Math.max(0.002, +gt.toFixed(4));
+          why.push(`gate ${arDb(cfg.gate)} dB`);
+        }
+        if (R.noise || R.pops) {
+          cfg.hp = R.pops && R.pops.low > 0.25 ? 120 : R.noise && R.noise.low > 0.01 ? 100 : 80;
+          cfg.hp = [60, 80, 100, 150, 200].reduce((a, b) => (Math.abs(b - cfg.hp) < Math.abs(a - cfg.hp) ? b : a));
+          why.push(`high-pass ${cfg.hp} Hz`);
+        }
+        if (R.range) {
+          cfg.lo = Math.max(21, Math.floor(R.range.lo - 3));
+          cfg.hi = Math.min(100, Math.max(cfg.lo + 24, Math.ceil(R.range.hi + 3)));
+          why.push(`range ${noteName(cfg.lo)} to ${noteName(cfg.hi)}`);
+        }
+        if (R.proc) {
+          cfg.proc = R.proc.true > R.proc.false * 1.15 && R.proc.true > 0.2;
+          why.push("processing " + (cfg.proc ? "on" : "off"));
+        }
+        return { cfg, why };
+      }
+      const AR_STEPS = { noise: ["1 SILENCE", arNoise, "Silence"], voice: ["2 VOICE", arVoice, "Voice"], pops: ["3 POPS", arPops, "Pops"], range: ["4 RANGE", arRange, "Range"], proc: ["5 PROCESS", arProc, "Processing"] };
+      function arRows() {
+        const rows = Object.entries(AR_STEPS).flatMap(([k, v]) => AR.rows[k] || [["·", v[2] + ": not run yet"]]);
+        if (AR.applied) rows.push(["◉", "Set for this microphone: " + AR.applied]);
+        return rows;
+      }
+      function arApply() {
+        const { cfg, why } = arPlan();
+        if (!why.length) return toast("Run a test first");
+        msSet(cfg);
+        AR.applied = why.join(", ");
+        toast("Settings applied");
+      }
+      function arFace() {
+        let el = document.getElementById("miLearn");
+        if (!el) {
+          el = document.createElement("div");
+          el.id = "miLearn";
+          document.body.appendChild(el);
+          el.innerHTML = `<div class="mlBox mtBox"><i>MICROPHONE TESTS</i><p id="arSay"></p><ul></ul><div class="mlB">${Object.entries(AR_STEPS).map(([k, v]) => `<button data-ar="${k}" title="Run this test">${v[0]}</button>`).join("")}<button data-ar="auto" class="on" title="Run all the tests, then set the parameters from them">AUTO SETUP</button><button data-ar="apply" title="Set the parameters from the tests already run">APPLY</button><button data-ar="copy" title="Copy the report as text">COPY REPORT</button><button data-ar="done">DONE</button></div></div>`;
+          el.onclick = async (e) => {
+            const b = e.target.closest("[data-ar]");
+            if (!b || (AR.busy && b.dataset.ar !== "done")) return;
+            const k = b.dataset.ar,
+              say = (t) => (el.querySelector("#arSay").textContent = t);
+            if (k === "done") return el.remove();
+            if (k === "apply") return arApply(), arFace();
+            if (k === "copy") {
+              const t = ["SING.Pocket microphone report", navigator.userAgent, `input: ${MS.dev ? "chosen device" : "default"}, channel ${MS.ch}`, "settings: " + JSON.stringify(MC), ...arRows().map(([a, x]) => a + " " + x)].join("\n");
+              return (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast("Report copied: paste it in a message"), () => toast("Could not copy here"));
+            }
+            AR.busy = true;
+            el.classList.add("busy");
+            if (MIC.on && !REC.on) micStop();
+            if (LV.on) await msLiveStop();
+            try {
+              for (const key of k === "auto" ? Object.keys(AR_STEPS) : [k]) {
+                try {
+                  await AR_STEPS[key][1](say);
+                } catch (err) {
+                  AR.rows[key] = [["✘", AR_STEPS[key][2] + " failed: " + (err.name || err.message || "unknown")]];
+                  AR.res[key] = null;
+                }
+                el.querySelector("ul").innerHTML = arList();
+              }
+              if (k === "auto") arApply();
+              say("Done.");
+            } finally {
+              AR.busy = false;
+              el.classList.remove("busy");
+              arFace();
+            }
+          };
+        }
+        el.querySelector("ul").innerHTML = arList();
+      }
+      const arList = () => arRows().map(([a, b]) => `<li class="${a === "✔" ? "ok" : a === "i" ? "inf" : ""}"><b>${a}</b>${esc(b)}</li>`).join("");
+      // LIVE: the real chain with the current settings
+      const LV = { on: false, raf: 0 };
+      async function msLiveStop() {
+        LV.on = false;
+        cancelAnimationFrame(LV.raf);
+        $("#msLive").classList.remove("on");
+        $("#msLive").textContent = "LIVE";
+        micStop();
+      }
+      async function msLive() {
+        if (LV.on) return msLiveStop();
+        if (!(await micStart())) return;
+        LV.on = true;
+        $("#msLive").classList.add("on");
+        $("#msLive").textContent = "STOP";
+        $("#msBox").hidden = false;
+        msList();
+        const buf = new Float32Array(4096),
+          loop = () => {
+            if (!LV.on || !MIC.an) return;
+            MIC.an.getFloatTimeDomainData(buf);
+            const pk = pkOf(buf),
+              v = voiceNow();
+            $("#msLvl").style.width = Math.min(100, Math.round(Math.sqrt(pk) * 100)) + "%";
+            $("#msLvl").style.background = pk > 0.97 ? "var(--bad, #e55)" : "var(--acc)";
+            $("#msNote").textContent = v.m === v.m ? noteName(Math.round(v.m)) : pk > 0.97 ? "TOO LOUD" : "--";
+            LV.raf = requestAnimationFrame(loop);
+          };
+        loop();
+      }
+      async function msList() {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
+        const ds = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === "audioinput" && d.deviceId && d.deviceId !== "default");
+        $("#msDev").innerHTML = '<option value="">Default microphone</option>' + ds.map((d, i) => `<option value="${esc(d.deviceId)}">${esc(d.label || "Input " + (i + 1))}</option>`).join("");
+        msFace();
+      }
+      function msFace() {
+        $("#msDev").value = MS.dev;
+        if ($("#msDev").value !== MS.dev) $("#msDev").value = "";
+        $("#msCh").value = MS.ch;
+        $("#msProc").value = MC.proc ? "1" : "0";
+        $("#msGain").value = Math.round(20 * Math.log10(MC.gain) * 2) / 2;
+        $("#msGainV").textContent = (20 * Math.log10(MC.gain)).toFixed(1) + " dB";
+        $("#msGate").value = arDb(MC.gate);
+        $("#msGateV").textContent = arDb(MC.gate) + " dB";
+        $("#msHp").value = String(MC.hp);
+        $("#msLo").value = MC.lo;
+        $("#msHi").value = MC.hi;
+      }
+      {
+        const opts = Array.from({ length: 80 }, (_, i) => i + 21).map((m) => `<option value="${m}">${noteName(m)}</option>`).join("");
+        $("#msLo").innerHTML = $("#msHi").innerHTML = opts;
+        $("#msDev").onchange = () => ((MS.dev = $("#msDev").value), (MC = msCfg()), msSave(), msFace(), toast(MS.dev ? "Input chosen. Each input keeps its own settings." : "Default microphone"));
+        $("#msCh").onchange = () => ((MS.ch = $("#msCh").value), msSave());
+        $("#msProc").onchange = () => msSet({ proc: $("#msProc").value === "1" });
+        $("#msGain").oninput = () => msSet({ gain: Math.pow(10, +$("#msGain").value / 20) });
+        $("#msGate").oninput = () => msSet({ gate: Math.pow(10, +$("#msGate").value / 20) });
+        $("#msHp").onchange = () => msSet({ hp: +$("#msHp").value });
+        $("#msLo").onchange = () => msSet({ lo: +$("#msLo").value });
+        $("#msHi").onchange = () => msSet({ hi: +$("#msHi").value });
+        $("#msLive").onclick = msLive;
+        $("#msTests").onclick = arFace;
+        $("#msReset").onclick = () => (delete MS.cfg[MS.dev || "default"], (MC = msCfg()), msSave(), msApply(), msFace(), toast("Microphone settings reset"));
+        msFace();
+        msList();
+      }
+
       // autocorrelation pitch detector (as in TUNE.Pocket), limited to the lags a voice can have
-      function detectPitch(buf, sr, minHz = 65, maxHz = 1300, N = buf.length) {
+      function detectPitch(buf, sr, minHz = 65, maxHz = 1300, N = buf.length, gate = 0.008) {
         let rms = 0;
         for (let i = 0; i < N; i++) rms += buf[i] * buf[i];
         rms = Math.sqrt(rms / N);
-        if (rms < 0.008) return { hz: -1, rms, conf: 0 };
+        if (rms < gate) return { hz: -1, rms, conf: 0 };
         const minLag = Math.max(2, Math.floor(sr / maxHz)),
           maxLag = Math.min(N >> 1, Math.ceil(sr / minHz)),
           W = N - maxLag,
@@ -2373,7 +2801,7 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
       function voiceNow() {
         if (!MIC.on || !MIC.an) return { m: NaN, rms: 0 };
         MIC.an.getFloatTimeDomainData(MIC.buf);
-        const { hz, rms } = detectPitch(MIC.buf, ctx.sampleRate);
+        const { hz, rms } = detectPitch(MIC.buf, ctx.sampleRate, midiToHz(MC.lo), midiToHz(MC.hi), MIC.buf.length, MC.gate);
         if (hz <= 0) return (voiceSm = null), { m: NaN, rms };
         const m = hzToMidi(hz);
         voiceSm = voiceSm == null || Math.abs(m - voiceSm) > 0.7 ? m : voiceSm * 0.55 + m * 0.45;
@@ -5571,6 +5999,7 @@ registerProcessor("autotune", AutoTune);
               "## The bottom bar",
               "- **FILES**: open a song, **import** a recording (any audio file), and how much space the app uses.",
               "- **OPTIONS**: **note names** in letters (**A B C**) or solfège (**Do Re Mi**), shared with TRACK.Pocket and TUNE.Pocket; **BACKING IN RECORDINGS** (on: warm-ups and song takes record the piano or the song with your voice, like a performance; off: only your voice); **OCTAVE-FREE** for the pitch test.",
+              "- **OPTIONS → Microphone**: choose the input (a USB interface works too) and its channel, and tune the **gain**, the **gate** (ignores room noise), a **high-pass** (cuts rumble and pops) and your **range** (limits the pitch detector to your voice). **LIVE** shows the level and the note with those settings. **TESTS** measures the noise, your level, pops, range and whether the browser's processing helps, and **AUTO SETUP** runs them all and sets everything. Each input keeps its own settings.",
               "- **OPTIONS → Install**: adds SING.Pocket to your home screen or apps, with its own window and working offline. The **INSTALL** button (here and in the welcome note) says **INSTALLED** when you already run it as an app; on iPhone it shows the Safari ▸ Share ▸ Add to Home Screen steps.",
               "- **THEME**: the six looks shared with TRACK.Pocket. On wide screens the backdrop is animated and moves with the song, the piano or your voice.",
               "- **HELP**: this manual.",
@@ -5584,6 +6013,7 @@ registerProcessor("autotune", AutoTune);
               "## La barra inferior",
               "- **FILES**: abrir una canción, **importar** una grabación (cualquier archivo de audio), y cuánto espacio usa la app.",
               "- **OPTIONS**: **nombres de las notas** en letras (**A B C**) o solfeo (**Do Re Mi**), compartido con TRACK.Pocket y TUNE.Pocket; **BACKING IN RECORDINGS** (activado: los calentamientos y tomas de canción graban el piano o la canción junto a tu voz, como una actuación; desactivado: solo tu voz); **OCTAVE-FREE** para la prueba de afinación.",
+              "- **OPTIONS → Microphone**: elige la entrada (una interfaz USB también vale) y su canal, y ajusta la **ganancia**, la **puerta** (ignora el ruido de la sala), un **filtro de graves** (quita retumbos y golpes de aire) y tu **rango** (limita el detector de tono a tu voz). **LIVE** muestra el nivel y la nota con esos ajustes. **TESTS** mide el ruido, tu nivel, los golpes de aire, el rango y si el procesado del navegador ayuda, y **AUTO SETUP** los hace todos y lo configura. Cada entrada guarda sus ajustes.",
               "- **OPTIONS → Install**: añade SING.Pocket a tu pantalla de inicio o a tus aplicaciones, con su propia ventana y funcionando sin conexión. El botón **INSTALL** (aquí y en la nota de bienvenida) dice **INSTALLED** si ya la usas como app; en iPhone muestra los pasos Safari ▸ Compartir ▸ Añadir a pantalla de inicio.",
               "- **THEME**: los seis aspectos que comparte con TRACK.Pocket. En pantallas anchas el fondo está animado y se mueve con la canción, el piano o tu voz.",
               "- **HELP**: este manual.",
@@ -5615,6 +6045,7 @@ registerProcessor("autotune", AutoTune);
             b: {
               en: [
                 "## Version 1.3.0",
+                "- **Microphone setup (OPTIONS):** pick the input, its channel, the gain, a gate, a high-pass and your range, per input. **TESTS** measures noise, level, pops, range and the browser processing, and **AUTO SETUP** sets everything from them. The recording, autotune and the sampler use the same cleaned input.",
                 "- **Install it:** the app is now a web app (PWA). Add it to the Home Screen (iPhone: Safari ▸ Share; Android and desktop: Chrome ▸ Install app) and it opens like an app and works offline. The welcome note and **OPTIONS** have an **INSTALL** button that knows when the app is already installed. The Android APK is retired.",
                 "- **Exercises:** an imported exercise file is limited to 400 notes per exercise and 100 exercises.",
                 "- **MIDI starting assignment:** known controllers (Akai MPK, Launchkey…) now start with a function on each knob and pad, shown as tags with a line on the DEVICE drawing: the pads play the sampler pads 1 to 16, and the keys play a reference note as always. ASSIGN, LEARN and the **DEFAULTS** switch in DEVICE change it, and CLEAR turns it off.",
@@ -5624,6 +6055,7 @@ registerProcessor("autotune", AutoTune);
               ],
               es: [
                 "## Versión 1.3.0",
+                "- **Configurar el micrófono (OPCIONES):** elige la entrada, su canal, la ganancia, una puerta, un filtro de graves y tu rango, por entrada. **TESTS** mide ruido, nivel, golpes de aire, rango y el procesado del navegador, y **AUTO SETUP** lo configura todo. La grabación, el autotune y el sampler usan la misma entrada ya limpia.",
                 "- **Instálala:** la app ahora es una web app (PWA). Añádela a la pantalla de inicio (iPhone: Safari ▸ Compartir; Android y escritorio: Chrome ▸ Instalar app) y se abre como una app y funciona sin conexión. La nota de bienvenida y **OPTIONS** tienen un botón **INSTALL** que sabe si la app ya está instalada. El APK de Android se retira.",
                 "- **Ejercicios:** un archivo de ejercicios importado se limita a 400 notas por ejercicio y 100 ejercicios.",
                 "- **Asignación MIDI inicial:** los controladores conocidos (Akai MPK, Launchkey…) empiezan con una función en cada pote y pad, mostrada como etiquetas con una línea en el dibujo de DEVICE: los pads tocan los pads del sampler 1 a 16, y las teclas tocan una nota de referencia como siempre. ASSIGN, LEARN y el interruptor **DEFAULTS** de DEVICE la cambian, y CLEAR la desactiva.",
