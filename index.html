@@ -1057,6 +1057,20 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
       #vxPads .sq .in {
         position: relative;
       }
+      #vxPads .sq.play::before {
+        font-size: 20px;
+        top: 3px;
+        right: 6px;
+        line-height: 1;
+      }
+      #vxPads .sq .lpm {
+        position: absolute;
+        right: 6px;
+        bottom: 7px;
+        font: 900 22px/1 var(--mono);
+        color: var(--text);
+        pointer-events: none;
+      }
       #vxPads .sq.empty {
         opacity: 0.55;
       }
@@ -1948,6 +1962,7 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
     }
     // a control nobody assigned, doing what its model's starting assignment says
     function fallback(from, key, cc, on, value) {
+      if (MI.holdDefaults && MI.holdDefaults()) return false; // the app is using the pads and keys for something on screen
       const e = effective(from, profOf(from), controlOf(from, key)), action = e && e[0] && MI.actions().find((a) => a.id === e[0]);
       if (!action) return false;
       run(action, from + "/" + key, cc, on, value);
@@ -2121,7 +2136,9 @@ html[data-theme="demo"] .card { border: 2px solid var(--line); background: var(-
       run(action, from + "/" + key, cc, on, value);
       return true;
     }
-    return { open, close, observe, route, fallback, defaultsOff };
+    // is this note-on from one of the controller's pads (its pad channel) and not from a key?
+    const isPad = (from, ch) => { const p = profOf(from); return !!p.pads && ch === (p.padCh ?? 9); };
+    return { open, close, observe, route, fallback, defaultsOff, isPad };
   }
   window.createMidiPanel = createMidiPanel;
   window.pocketMidiHelpers = { padIndex, knobRank, guess };
@@ -5615,6 +5632,7 @@ registerProcessor("autotune", AutoTune);
             b: {
               en: [
                 "## Version 1.3.0",
+                "- **Sampler:** the play and loop marks on the pads are big enough to see now. While the sampler effects are open, the MIDI pads and keys play them.",
                 "- **Install it:** the app is now a web app (PWA). Add it to the Home Screen (iPhone: Safari ▸ Share; Android and desktop: Chrome ▸ Install app) and it opens like an app and works offline. The welcome note and **OPTIONS** have an **INSTALL** button that knows when the app is already installed. The Android APK is retired.",
                 "- **Exercises:** an imported exercise file is limited to 400 notes per exercise and 100 exercises.",
                 "- **MIDI starting assignment:** known controllers (Akai MPK, Launchkey…) now start with a function on each knob and pad, shown as tags with a line on the DEVICE drawing: the pads play the sampler pads 1 to 16, and the keys play a reference note as always. ASSIGN, LEARN and the **DEFAULTS** switch in DEVICE change it, and CLEAR turns it off.",
@@ -5624,6 +5642,7 @@ registerProcessor("autotune", AutoTune);
               ],
               es: [
                 "## Versión 1.3.0",
+                "- **Sampler:** las marcas de reproducción y de bucle en los pads ahora se ven bien. Con los efectos del sampler abiertos, los pads y teclas MIDI los tocan.",
                 "- **Instálala:** la app ahora es una web app (PWA). Añádela a la pantalla de inicio (iPhone: Safari ▸ Compartir; Android y escritorio: Chrome ▸ Instalar app) y se abre como una app y funciona sin conexión. La nota de bienvenida y **OPTIONS** tienen un botón **INSTALL** que sabe si la app ya está instalada. El APK de Android se retira.",
                 "- **Ejercicios:** un archivo de ejercicios importado se limita a 400 notas por ejercicio y 100 ejercicios.",
                 "- **Asignación MIDI inicial:** los controladores conocidos (Akai MPK, Launchkey…) empiezan con una función en cada pote y pad, mostrada como etiquetas con una línea en el dibujo de DEVICE: los pads tocan los pads del sampler 1 a 16, y las teclas tocan una nota de referencia como siempre. ASSIGN, LEARN y el interruptor **DEFAULTS** de DEVICE la cambian, y CLEAR la desactiva.",
@@ -7276,7 +7295,7 @@ registerProcessor("autotune", AutoTune);
             if (r && r.i === i && !r.over) return `<div class="sq count" data-p="${i}" ${col}>${st}<span class="nt">·</span><span class="in">GET READY</span><i></i></div>`;
             if (!s) return `<div class="sq empty" data-p="${i}" ${col}>${st}<span class="nt">+</span><span class="in">REC</span></div>`;
             const cls = ["sq has", VX.play.has(i) ? "play" : "", r && r.i === i ? "rec" : "", VX.panel !== "pads" && VX.sel === i ? "sel" : ""].join(" ");
-            return `<div class="${cls}" data-p="${i}" ${col}><svg class="wv" viewBox="0 0 40 20" preserveAspectRatio="none"><path d="${wavePath(vxPk(s, "pk", s.data, 40))}"/></svg>${st}<span class="nt">${i + 1}</span><span class="in">${mmss(vxDur(s))}${s.fx.length || s.pitch ? " · FX" : ""}${s.loop ? " · ∞" : ""}</span><i></i></div>`;
+            return `<div class="${cls}" data-p="${i}" ${col}><svg class="wv" viewBox="0 0 40 20" preserveAspectRatio="none"><path d="${wavePath(vxPk(s, "pk", s.data, 40))}"/></svg>${st}<span class="nt">${i + 1}</span><span class="in">${mmss(vxDur(s))}${s.fx.length || s.pitch ? " · FX" : ""}</span>${s.loop ? '<b class="lpm" title="Loops">∞</b>' : ""}<i></i></div>`;
           })
           .join("");
         if (!$("#vxFx").childElementCount)
@@ -7632,6 +7651,7 @@ registerProcessor("autotune", AutoTune);
           return MI.cc && MI.cc(a, b, ch);
         }
         if (cc) return MI.cc && MI.cc(a, b, ch);
+        MI.pad = midiPanel.isPad(from, ch); // an app can treat the pads and the keys of a controller differently
         if (on) {
           if (MI.susd.delete(a) && MI.off) MI.off(a, ch); // pressed again under the pedal: the old one ends first
           MI.held.set(a, b);
@@ -7928,8 +7948,15 @@ registerProcessor("autotune", AutoTune);
       }
       // the keys: in the editor they write; in SAMPLER they play the selected pad at their pitch; elsewhere a
       // reference note on the piano, to sing to
+      // the starting assignment (pads = sampler pads) steps aside while the effects are open: then the pads and keys play the effects
+      const miVoxFx = () => S.view === "vox" && VX.panel === "fx";
+      MI.holdDefaults = miVoxFx;
       MI.on = (n, v) => {
         if (!$("#exEd").hidden) return edMidi(n, true);
+        if (miVoxFx()) {
+          const f = VFX[(((n - (MI.pad ? 36 : 48)) % VFX.length) + VFX.length) % VFX.length];
+          return $(`#vxFx [data-fx="${f[0]}"]`).click();
+        }
         getCtx().then((c) => {
           const t = c.currentTime + 0.005;
           if (S.view === "vox" && VX.s[VX.sel]) {
